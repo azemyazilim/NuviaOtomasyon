@@ -27,7 +27,10 @@ from . import views
 
 
 def redirect_to_dashboard(request):
-    return redirect('dashboard')
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    else:
+        return redirect('kullanici:login')
 
 def favicon_view(request):
     return HttpResponse(status=204)  # Empty response for favicon
@@ -40,9 +43,9 @@ urlpatterns = [
     
     # Ana sayfa
     path('', redirect_to_dashboard, name='home'),
-    path('dashboard/', views.dashboard_view, name='dashboard'),
-    path('gunluk-rapor/', views.gunluk_rapor_view, name='gunluk_rapor'),
-    path('gunluk-rapor/pdf/', views.gunluk_rapor_pdf_view, name='gunluk_rapor_pdf'),
+    path('dashboard/', login_required(views.dashboard_view), name='dashboard'),
+    path('gunluk-rapor/', login_required(views.gunluk_rapor_view), name='gunluk_rapor'),
+    path('gunluk-rapor/pdf/', login_required(views.gunluk_rapor_pdf_view), name='gunluk_rapor_pdf'),
     
     # Authentication
     path('kullanici/', include('kullanici.urls', namespace='kullanici')),

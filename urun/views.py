@@ -9,7 +9,7 @@ from .models import Urun, UrunKategoriUst, Varyasyon, Marka
 from log.models import AktiviteLog
 
 
-# @login_required  # Geçici olarak kaldırıldı - test için
+@login_required
 def urun_listesi(request):
     """Ürün listesi view'ı"""
     try:

@@ -31,8 +31,18 @@ class PermissionCheckMiddleware(MiddlewareMixin):
     """Yetki kontrolü middleware'i"""
     
     def process_request(self, request):
-        # Giriş sayfalarını atla
-        if request.path.startswith('/kullanici/login/') or not request.user.is_authenticated:
+        # Login gerektirmeyen sayfalar
+        allowed_paths = [
+            '/kullanici/login/',
+            '/admin/',
+            '/favicon.ico',
+        ]
+        
+        # Eğer kullanıcı login olmamışsa ve izin verilen sayfalarda değilse
+        if not request.user.is_authenticated:
+            # İzin verilen sayfalarda değilse login'e yönlendir
+            if not any(request.path.startswith(path) for path in allowed_paths):
+                return redirect(reverse('kullanici:login'))
             return None
         
         # Admin paneli için özel kontrol
