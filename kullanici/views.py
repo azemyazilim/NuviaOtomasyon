@@ -51,6 +51,7 @@ def log_user_activity(user, action, content_type='', object_id=None, description
     )
 
 
+from django.views.decorators.csrf import csrf_protect
 def custom_login_view(request):
     """Özelleştirilmiş giriş görünümü"""
     if request.user.is_authenticated:

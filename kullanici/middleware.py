@@ -42,6 +42,10 @@ class PermissionCheckMiddleware(MiddlewareMixin):
         if not request.user.is_authenticated:
             # İzin verilen sayfalarda değilse login'e yönlendir
             if not any(request.path.startswith(path) for path in allowed_paths):
+                # AJAX istekleri için farklı response
+                if request.is_ajax() or request.content_type == 'application/json':
+                    from django.http import JsonResponse
+                    return JsonResponse({'error': 'Authentication required'}, status=401)
                 return redirect(reverse('kullanici:login'))
             return None
         
