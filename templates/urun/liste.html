@@ -1,0 +1,1478 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Ürün Listesi - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .product-image {
+        height: 200px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .product-image img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .product-image .no-image {
+        font-size: 3rem;
+        color: #6c757d;
+    }
+    
+    .product-info {
+        padding: 1.5rem;
+    }
+    
+    .product-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .product-category {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-brand {
+        color: #007bff;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .product-price {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-stock {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stock-high { color: #28a745; }
+    .stock-medium { color: #ffc107; }
+    .stock-low { color: #dc3545; }
+    .stock-out { color: #6c757d; }
+    
+    .product-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+    }
+    
+    .btn-sm {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .search-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-cards {
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .pagination {
+        justify-content: center;
+    }
+    
+    .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+        border: 2px solid #e9ecef;
+        color: #007bff;
+    }
+    
+    .page-link:hover, .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .search-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Liste görünümü stilleri - Yeni Kompakt Tasarım */
+    .product-list-view .product-card {
+        flex-direction: row;
+        max-width: 100%;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        border-left: 4px solid #007bff;
+        min-height: 60px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .product-list-view .product-card:hover {
+        transform: translateX(3px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left-color: #28a745;
+    }
+    
+    .product-list-view .product-image {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+    }
+    
+    .product-list-view .product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .product-list-view .product-image .no-image {
+        font-size: 1.2rem;
+        color: #6c757d;
+    }
+    
+    .product-list-view .product-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0;
+        min-height: auto;
+    }
+    
+    .product-list-view .product-details {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .product-list-view .product-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0;
+        min-width: 200px;
+        color: #2c3e50;
+    }
+    
+    .product-list-view .product-meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .product-list-view .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+    
+    .product-list-view .product-stock-compact {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        min-width: 80px;
+    }
+    
+    .product-list-view .stock-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .stock-badge.high { background: #d4edda; color: #155724; }
+    .stock-badge.medium { background: #fff3cd; color: #856404; }
+    .stock-badge.low { background: #f8d7da; color: #721c24; }
+    .stock-badge.out { background: #f5c6cb; color: #721c24; }
+    
+    .product-list-view .product-price-section {
+        text-align: right;
+        min-width: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+    
+    .product-list-view .product-price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #28a745;
+        margin: 0;
+    }
+    
+    .product-list-view .product-actions {
+        display: flex;
+        gap: 4px;
+    }
+    
+    .product-list-view .product-actions .btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        min-width: auto;
+    }
+    
+    @media (max-width: 768px) {
+        .product-card {
+            margin-bottom: 1rem;
+        }
+        
+        .search-section, .filter-section {
+            padding: 1rem;
+        }
+        
+        .product-actions {
+            flex-direction: column;
+        }
+        
+        .product-actions .btn {
+            margin-bottom: 0.25rem;
+        }
+    }
+    
+    /* Liste görünümü için küçük görsel */
+    .product-image-small {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+    
+    .product-image-small img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .no-image-small {
+        color: #6c757d;
+        font-size: 1rem;
+    }
+    
+    /* Liste başlık hizalaması */
+    .list-header .card-body {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .list-header .row {
+        margin: 0;
+    }
+    
+    .list-header .col-1,
+    .list-header .col-2,
+    .list-header .col-5 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    /* Liste görünümü için özel düzenlemeler */
+    .product-list-view .product-card {
+        margin-bottom: 0.8rem;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .product-list-view .product-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 20px rgba(0,123,255,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .product-list-view .list-view-info {
+        padding: 0;
+    }
+    
+    /* Modern Liste Item Tasarımı */
+    .modern-list-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        gap: 1.5rem;
+        min-height: 80px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-left: 4px solid #007bff;
+    }
+    
+    /* Ürün Görseli */
+    .product-image-container {
+        flex-shrink: 0;
+        width: 60px;
+        height: 60px;
+        position: relative;
+    }
+    
+    .product-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .product-placeholder {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 1.5rem;
+    }
+    
+    /* Ana Ürün Bilgileri */
+    .product-main-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .product-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+    }
+    
+    .product-details {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        color: #6c757d;
+        background: #f8f9fa;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .detail-item i {
+        font-size: 0.8rem;
+        color: #007bff;
+    }
+    
+    /* Kategori */
+    .product-category {
+        flex-shrink: 0;
+        min-width: 120px;
+    }
+    
+    .category-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 100px;
+        box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+    }
+    
+    /* Stok Durumu */
+    .product-stock {
+        flex-shrink: 0;
+        min-width: 120px;
+    }
+    
+    .stock-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.6rem;
+        border-radius: 12px;
+        text-align: center;
+        min-width: 100px;
+    }
+    
+    .stock-badge i {
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .stock-badge span {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.1rem;
+    }
+    
+    .stock-badge small {
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+    
+    .stock-empty {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(220,53,69,0.2);
+    }
+    
+    .stock-critical {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #212529;
+        box-shadow: 0 2px 8px rgba(255,193,7,0.2);
+    }
+    
+    .stock-low {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(23,162,184,0.2);
+    }
+    
+    .stock-good {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(40,167,69,0.2);
+    }
+    
+    /* Fiyat */
+    .product-price {
+        flex-shrink: 0;
+        min-width: 100px;
+        text-align: center;
+    }
+    
+    .price-amount {
+        display: inline-block;
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+        padding: 0.6rem 1rem;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(40,167,69,0.2);
+        min-width: 80px;
+    }
+    
+    /* Aksiyon Butonları */
+    .product-actions {
+        flex-shrink: 0;
+        min-width: 140px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .view-btn {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+    }
+    
+    .view-btn:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(23,162,184,0.3);
+    }
+    
+    .edit-btn {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #212529;
+    }
+    
+    .edit-btn:hover {
+        background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,193,7,0.3);
+    }
+    
+    .delete-btn {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+    
+    .delete-btn:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220,53,69,0.3);
+    }
+    
+    /* Modern Liste Başlığı */
+    .modern-list-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .header-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .header-section:first-child {
+        width: 60px; /* Görsel için */
+    }
+    
+    .header-main {
+        flex: 1; /* Ana ürün bilgileri için */
+        justify-content: flex-start;
+        padding-left: 1.5rem;
+    }
+    
+    .header-section:nth-child(3) {
+        min-width: 120px; /* Kategori için */
+    }
+    
+    .header-section:nth-child(4) {
+        min-width: 120px; /* Stok için */
+    }
+    
+    .header-section:nth-child(5) {
+        min-width: 100px; /* Fiyat için */
+    }
+    
+    .header-section:last-child {
+        min-width: 140px; /* İşlemler için */
+    }
+    
+    .header-title {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Tablo görünümü stilleri */
+    .table-product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .table-no-image {
+        width: 50px;
+        height: 50px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+    
+    .product-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .product-row:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+    }
+    
+    .table td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    
+    /* View toggle buttons */
+    .btn-group .btn {
+        border-radius: 0;
+    }
+    
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.375rem;
+        border-bottom-left-radius: 0.375rem;
+    }
+    
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+    }
+    
+    /* Responsive tasarım */
+    @media (max-width: 768px) {
+        .table-responsive table {
+            font-size: 0.8rem;
+        }
+        
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .table-product-image, 
+        .table-no-image {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .d-flex.gap-2 {
+            flex-direction: column;
+            gap: 0.5rem !important;
+        }
+        
+        .btn-group {
+            width: 100%;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+    }
+    
+    /* Tek satır inline bilgiler */
+    .product-info-inline {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .product-title-inline {
+        font-size: 1rem;
+        color: #2c3e50;
+        margin-right: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+    
+    .detail-inline {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .detail-separator {
+        color: #dee2e6;
+        margin: 0 0.25rem;
+    }
+    
+    /* Kategori inline */
+    .category-inline {
+        font-size: 0.85rem;
+        color: #495057;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        max-width: 100%;
+    }
+    
+    /* Tek satır stok bilgisi */
+    .stock-inline {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 15px;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Tek satır fiyat */
+    .product-price-inline {
+        font-size: 1.1rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    
+    /* Horizontal inline butonlar */
+    .product-actions-inline {
+        display: flex;
+        gap: 1px;
+        justify-content: center;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    
+    .btn-xs {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.65rem;
+        line-height: 1;
+        border-radius: 3px;
+        min-width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-xs i {
+        font-size: 0.7rem;
+    }
+    
+    .product-list-view .badge {
+        font-size: 0.75rem;
+    }
+    
+    /* Responsive düzenlemeler - Modern Liste Görünümü */
+    @media (max-width: 768px) {
+        .modern-list-item {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+            padding: 1.5rem 1rem;
+        }
+        
+        .product-image-container {
+            width: 80px;
+            height: 80px;
+            align-self: center;
+        }
+        
+        .product-main-info, 
+        .product-category, 
+        .product-stock, 
+        .product-price, 
+        .product-actions {
+            min-width: auto;
+            width: 100%;
+        }
+        
+        .product-details {
+            justify-content: center;
+        }
+        
+        .modern-list-header {
+            display: none;
+        }
+        
+        .list-header {
+            display: none !important;
+        }
+        
+        .stock-badge {
+            min-width: auto;
+            width: fit-content;
+            margin: 0 auto;
+        }
+        
+        .action-buttons {
+            justify-content: center;
+        }
+        
+        .category-badge {
+            min-width: auto;
+            width: fit-content;
+        }
+        
+        .price-amount {
+            min-width: auto;
+        }
+        
+        /* Eski liste düzeni için fallback */
+        .product-list-view .row {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        
+        .product-list-view .col-5 {
+            min-width: 250px;
+        }
+        
+        .product-list-view .col-2 {
+            min-width: 120px;
+        }
+        
+        .product-list-view .col-1 {
+            min-width: 80px;
+        }
+        
+        .product-title-inline {
+            max-width: 150px;
+        }
+        
+        .product-actions-inline .btn-xs {
+            padding: 0.15rem 0.3rem;
+            font-size: 0.65rem;
+        }
+        
+        .stock-inline {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.4rem;
+        }
+        
+        .list-header {
+            display: none !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .product-list-view .list-view-info {
+            padding: 0.5rem;
+        }
+        
+        .product-title-inline {
+            font-size: 0.9rem;
+            max-width: 120px;
+        }
+        
+        .detail-inline {
+            font-size: 0.75rem;
+        }
+        
+        .category-inline {
+            font-size: 0.8rem;
+        }
+        
+        .product-price-inline {
+            font-size: 1rem;
+        }
+        
+        .product-actions-inline {
+            flex-direction: column;
+            gap: 1px;
+        }
+        
+        .product-actions-inline .btn-xs {
+            padding: 0.1rem 0.2rem;
+            font-size: 0.6rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-1">
+                <i class="fas fa-boxes me-2"></i>Ürün Yönetimi
+            </h2>
+            <p class="text-muted mb-0">Sistemdeki tüm ürünleri görüntüle ve yönet</p>
+        </div>
+        <div class="d-flex gap-2">
+            <!-- Görünüm Değiştirme Butonları -->
+            <div class="btn-group" role="group" aria-label="Görünüm seçenekleri">
+                <button class="btn btn-primary" id="cardViewBtn" onclick="switchView('card')">
+                    <i class="fas fa-th-large"></i> Kart Görünümü
+                </button>
+                <button class="btn btn-outline-primary" id="tableViewBtn" onclick="switchView('table')">
+                    <i class="fas fa-list"></i> Liste Görünümü
+                </button>
+            </div>
+            <a href="{% url 'urun:ekle' %}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>Yeni Ürün Ekle
+            </a>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row stats-cards">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-number text-primary">{{ toplam_urun }}</div>
+                <div class="stat-label">Toplam Ürün</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-number text-success">{{ aktif_urun }}</div>
+                <div class="stat-label">Aktif Ürün</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-number text-warning">{{ kritik_stok }}</div>
+                <div class="stat-label">Kritik Stok</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-number text-danger">{{ tukenen_stok }}</div>
+                <div class="stat-label">Tükenen Stok</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arama ve Filtreler -->
+    <div class="search-section">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="q" class="form-label">
+                    <i class="fas fa-search me-1"></i>Ürün Ara
+                </label>
+                <input type="text" class="form-control" id="q" name="q" 
+                       value="{{ query }}" placeholder="Ürün adı, barkod veya SKU...">
+            </div>
+            <div class="col-md-3">
+                <label for="kategori" class="form-label">
+                    <i class="fas fa-tags me-1"></i>Kategori
+                </label>
+                <select class="form-select" id="kategori" name="kategori">
+                    <option value="">Tüm Kategoriler</option>
+                    {% for kategori in kategoriler %}
+                        <option value="{{ kategori.id }}" 
+                                {% if kategori.id|stringformat:'s' == kategori_filter %}selected{% endif %}>
+                            {{ kategori.ad }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="durum" class="form-label">
+                    <i class="fas fa-filter me-1"></i>Stok Durumu
+                </label>
+                <select class="form-select" id="durum" name="durum">
+                    <option value="">Tümü</option>
+                    <option value="stokta" {% if durum_filter == 'stokta' %}selected{% endif %}>Stokta</option>
+                    <option value="kritik" {% if durum_filter == 'kritik' %}selected{% endif %}>Kritik Seviye</option>
+                    <option value="tukendi" {% if durum_filter == 'tukendi' %}selected{% endif %}>Tükendi</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="fas fa-search me-1"></i>Ara
+                    </button>
+                    <a href="{% url 'urun:liste' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Ürün Listesi -->
+    {% if urunler %}
+        <!-- Kart Görünümü -->
+        <div id="cardView" class="row" id="productContainer">
+            {% for urun in urunler %}
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4 product-item">
+                    <div class="card product-card h-100">
+                        <!-- Kart Görünümü (Varsayılan) -->
+                        <div class="card-view-info">
+                            <!-- Ürün Görseli -->
+                            <div class="product-image">
+                                {% if urun.resim %}
+                                    <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}">
+                                {% else %}
+                                    <i class="fas fa-image no-image"></i>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Ürün Bilgileri -->
+                            <div class="product-info">
+                                <div class="product-details">
+                                    <h5 class="product-title">{{ urun.ad }}</h5>
+                                    <p class="product-category">
+                                        <i class="fas fa-tag me-1"></i>{{ urun.kategori_ad }}
+                                    </p>
+                                    
+                                    <!-- Marka Bilgisi -->
+                                    {% if urun.marka_ad %}
+                                    <p class="product-brand">
+                                        <i class="fas fa-copyright me-1"></i>{{ urun.marka_ad }}
+                                    </p>
+                                    {% endif %}
+                                    
+                                    <!-- Stok Durumu -->
+                                    <div class="product-stock">
+                                        {% if urun.stok_miktari == 0 %}
+                                            <span class="stock-out">
+                                                <i class="fas fa-times-circle me-1"></i>Stok Tükendi
+                                            </span>
+                                        {% elif urun.stok_miktari <= 10 %}
+                                            <span class="stock-low">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Kritik: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% elif urun.stok_miktari <= 50 %}
+                                            <span class="stock-medium">
+                                                <i class="fas fa-minus-circle me-1"></i>Az: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% else %}
+                                            <span class="stock-high">
+                                                <i class="fas fa-check-circle me-1"></i>Yeterli: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Barkod -->
+                                    {% if urun.barkod %}
+                                        <div class="text-muted small mb-2">
+                                            <i class="fas fa-barcode me-1"></i>{{ urun.barkod }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Cinsiyet -->
+                                    <div class="text-muted small mb-2">
+                                        {% if urun.cinsiyet == 'kadin' %}
+                                            <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                        {% elif urun.cinsiyet == 'erkek' %}
+                                            <i class="fas fa-mars me-1" style="color: #007bff;"></i>Erkek
+                                        {% else %}
+                                            <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="product-price-section">
+                                    <!-- Fiyat -->
+                                    <div class="product-price">
+                                        {{ urun.satis_fiyati|turkish_currency }}
+                                    </div>
+                                    
+                                    <!-- Aksiyonlar -->
+                                    <div class="product-actions">
+                                        <a href="{% url 'urun:detay' urun.id %}" class="btn btn-outline-primary btn-sm" title="Gözat">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-outline-warning btn-sm" title="Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'urun:sil' urun.id %}" class="btn btn-outline-danger btn-sm" 
+                                           onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')" title="Sil">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Tablo Görünümü -->
+        <div id="tableView" class="d-none">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Görsel</th>
+                                    <th>Ürün Adı</th>
+                                    <th>Kategori</th>
+                                    <th>Marka</th>
+                                    <th>Barkod</th>
+                                    <th class="text-center">Stok</th>
+                                    <th class="text-end">Fiyat</th>
+                                    <th class="text-center">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for urun in urunler %}
+                                <tr class="product-row">
+                                    <td>
+                                        {% if urun.resim %}
+                                            <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}" class="table-product-image">
+                                        {% else %}
+                                            <div class="table-no-image">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ urun.ad }}</strong>
+                                            {% if urun.cinsiyet %}
+                                                <br>
+                                                <small class="text-muted">
+                                                    {% if urun.cinsiyet == 'kadin' %}
+                                                        <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                                    {% elif urun.cinsiyet == 'erkek' %}
+                                                        <i class="fas fa-mars me-1" style="color: #007bff;"></i>Erkek
+                                                    {% else %}
+                                                        <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                                    {% endif %}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ urun.kategori_ad|default:"Kategorisiz" }}
+                                        </span>
+                                    </td>
+                                    <td>{{ urun.marka_ad|default:"-" }}</td>
+                                    <td>
+                                        {% if urun.barkod %}
+                                            <code>{{ urun.barkod }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if urun.stok_miktari == 0 %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>Tükendi
+                                            </span>
+                                        {% elif urun.stok_miktari <= 10 %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>{{ urun.stok_miktari }}
+                                            </span>
+                                        {% elif urun.stok_miktari <= 50 %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-minus-circle me-1"></i>{{ urun.stok_miktari }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>{{ urun.stok_miktari }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-success">{{ urun.satis_fiyati|turkish_currency }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-outline-primary" title="Görüntüle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-outline-warning" title="Düzenle">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'urun:sil' urun.id %}" class="btn btn-outline-danger" 
+                                               onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')" title="Sil">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sayfalama -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Sayfa navigasyonu" class="mt-4">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if kategori_filter %}kategori={{ kategori_filter }}&{% endif %}{% if durum_filter %}durum={{ durum_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if kategori_filter %}kategori={{ kategori_filter }}&{% endif %}{% if durum_filter %}durum={{ durum_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if kategori_filter %}kategori={{ kategori_filter }}&{% endif %}{% if durum_filter %}durum={{ durum_filter }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <!-- Boş Durum -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-box-open text-muted" style="font-size: 4rem;"></i>
+            </div>
+            <h4 class="text-muted mb-3">Henüz ürün bulunamadı</h4>
+            {% if query %}
+                <p class="text-muted mb-4">"{{ query }}" araması için sonuç bulunamadı.</p>
+                <a href="{% url 'urun:liste' %}" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Tüm Ürünleri Görüntüle
+                </a>
+            {% else %}
+                <p class="text-muted mb-4">Sisteme henüz ürün eklenmemiş.</p>
+            {% endif %}
+            <a href="{% url 'urun:ekle' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>İlk Ürünü Ekle
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Görünüm değiştirme fonksiyonu
+    function setView(viewType) {
+        const gridBtn = document.getElementById('gridView');
+        const listBtn = document.getElementById('listView');
+        const container = document.getElementById('productContainer');
+        const productItems = document.querySelectorAll('.product-item');
+        
+        // Buton durumlarını güncelle
+        gridBtn.classList.remove('active');
+        listBtn.classList.remove('active');
+        
+        if (viewType === 'grid') {
+            gridBtn.classList.add('active');
+            container.classList.remove('product-list-view');
+            
+            // Grid görünüm için sınıfları ayarla
+            productItems.forEach(item => {
+                item.className = 'col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4 product-item';
+            });
+            
+            // Local storage'a kaydet
+            localStorage.setItem('productView', 'grid');
+            
+        } else if (viewType === 'list') {
+            listBtn.classList.add('active');
+            container.classList.add('product-list-view');
+            
+            // Liste görünüm için sınıfları ayarla
+            productItems.forEach(item => {
+                item.className = 'col-12 mb-3 product-item';
+            });
+            
+            // Local storage'a kaydet
+            localStorage.setItem('productView', 'list');
+        }
+    }
+    
+    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedView = localStorage.getItem('productView') || 'grid';
+        setView(savedView);
+    });
+    
+    // Arama formu otomatik gönderme
+    document.getElementById('kategori').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('durum').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    // Gerçek zamanlı arama (debounced)
+    let searchTimeout;
+    document.getElementById('q').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            // Bu sadece 3 karakterden fazla olduğunda çalışır
+            if (this.value.length >= 3 || this.value.length === 0) {
+                this.form.submit();
+            }
+        }, 500);
+    });
+    
+    // Görünüm değiştirme fonksiyonu
+    function setView(viewType) {
+        const container = document.getElementById('productContainer');
+        const cardViews = document.querySelectorAll('.card-view-info');
+        const listViews = document.querySelectorAll('.list-view-info');
+        const listHeader = document.querySelector('.list-header');
+        const productItems = document.querySelectorAll('.product-item');
+        const cardBtn = document.getElementById('gridView');
+        const listBtn = document.getElementById('listView');
+        
+        if (viewType === 'list') {
+            // Liste görünümü
+            container.classList.add('product-list-view');
+            productItems.forEach(item => {
+                item.classList.remove('col-xl-3', 'col-lg-4', 'col-md-6');
+                item.classList.add('col-12');
+            });
+            cardViews.forEach(view => view.classList.add('d-none'));
+            listViews.forEach(view => view.classList.remove('d-none'));
+            if (listHeader) listHeader.classList.remove('d-none');
+            
+            cardBtn.classList.remove('active');
+            listBtn.classList.add('active');
+        } else {
+            // Kart görünümü (grid)
+            container.classList.remove('product-list-view');
+            productItems.forEach(item => {
+                item.classList.remove('col-12');
+                item.classList.add('col-xl-3', 'col-lg-4', 'col-md-6');
+            });
+            cardViews.forEach(view => view.classList.remove('d-none'));
+            listViews.forEach(view => view.classList.add('d-none'));
+            if (listHeader) listHeader.classList.add('d-none');
+            
+            listBtn.classList.remove('active');
+            cardBtn.classList.add('active');
+        }
+        
+        // Seçimi localStorage'da sakla
+        localStorage.setItem('productViewType', viewType);
+    }
+    
+    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedView = localStorage.getItem('productViewType') || 'grid';
+        setView(savedView);
+    });
+    
+    // Görünüm değiştirme fonksiyonları
+    function switchView(viewType) {
+        const cardView = document.getElementById('cardView');
+        const tableView = document.getElementById('tableView');
+        const cardBtn = document.getElementById('cardViewBtn');
+        const tableBtn = document.getElementById('tableViewBtn');
+        
+        if (viewType === 'card') {
+            // Kart görünümü
+            cardView.classList.remove('d-none');
+            tableView.classList.add('d-none');
+            cardBtn.classList.remove('btn-outline-primary');
+            cardBtn.classList.add('btn-primary');
+            tableBtn.classList.remove('btn-primary');
+            tableBtn.classList.add('btn-outline-primary');
+        } else {
+            // Tablo görünümü
+            cardView.classList.add('d-none');
+            tableView.classList.remove('d-none');
+            tableBtn.classList.remove('btn-outline-primary');
+            tableBtn.classList.add('btn-primary');
+            cardBtn.classList.remove('btn-primary');
+            cardBtn.classList.add('btn-outline-primary');
+        }
+        
+        // Seçimi localStorage'da sakla
+        localStorage.setItem('productViewType', viewType);
+    }
+    
+    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedView = localStorage.getItem('productViewType') || 'card';
+        switchView(savedView);
+    });
+</script>
+{% endblock %}

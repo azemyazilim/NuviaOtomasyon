@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kullanıcı Aktiviteleri{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .activity-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-card:hover {
+        box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .activity-icon.create { background: #d4edda; color: #155724; }
+    .activity-icon.update { background: #d1ecf1; color: #0c5460; }
+    .activity-icon.delete { background: #f8d7da; color: #721c24; }
+    .activity-icon.login { background: #d4edda; color: #155724; }
+    .activity-icon.logout { background: #f8d7da; color: #721c24; }
+    .activity-icon.view { background: #fff3cd; color: #856404; }
+    
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .user-badge.admin { background: #dc3545; color: white; }
+    .user-badge.manager { background: #fd7e14; color: white; }
+    .user-badge.sales { background: #198754; color: white; }
+    .user-badge.warehouse { background: #6610f2; color: white; }
+    .user-badge.viewer { background: #6c757d; color: white; }
+    
+    .stats-cards .card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .ip-address {
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-user-clock text-primary me-2"></i>Kullanıcı Aktiviteleri</h2>
+                    <p class="text-muted mb-0">Tüm kullanıcı işlemlerini takip edin</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="row">
+        <div class="col-12">
+            <div class="filter-card">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Arama</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search_query }}" placeholder="Kullanıcı, işlem, açıklama...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="user" class="form-label">Kullanıcı</label>
+                        <select class="form-select" id="user" name="user">
+                            <option value="">Tümü</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}" {% if user_filter == user.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ user.get_full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">Başlangıç</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">Bitiş</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter me-1"></i>Filtrele
+                        </button>
+                        <a href="{% url 'kullanici:user_activity_logs' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Temizle
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aktivite Listesi -->
+    <div class="row">
+        <div class="col-12">
+            {% if activities %}
+                {% for activity in activities %}
+                <div class="card activity-card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="activity-icon {{ activity.action }}">
+                                    {% if activity.action == 'create' %}
+                                        <i class="fas fa-plus"></i>
+                                    {% elif activity.action == 'update' %}
+                                        <i class="fas fa-edit"></i>
+                                    {% elif activity.action == 'delete' %}
+                                        <i class="fas fa-trash"></i>
+                                    {% elif activity.action == 'login' %}
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    {% elif activity.action == 'logout' %}
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    {% else %}
+                                        <i class="fas fa-eye"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            {% if activity.user %}
+                                                <span class="user-badge {{ activity.user.role|lower }}">
+                                                    <i class="fas fa-user me-1"></i>
+                                                    {{ activity.user.get_full_name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="user-badge viewer">
+                                                    <i class="fas fa-user-slash me-1"></i>
+                                                    Bilinmeyen Kullanıcı
+                                                </span>
+                                            {% endif %}
+                                            <span class="badge bg-primary ms-2">{{ activity.get_action_display }}</span>
+                                        </h6>
+                                        {% if activity.description %}
+                                        <p class="mb-1 text-muted">{{ activity.description }}</p>
+                                        {% endif %}
+                                        {% if activity.content_type %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-tag me-1"></i>{{ activity.content_type }}
+                                            {% if activity.object_id %}(ID: {{ activity.object_id }}){% endif %}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ activity.timestamp|date:"d.m.Y H:i:s" }}
+                                        </small>
+                                        <div class="ip-address mt-1">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ activity.ip_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Sayfalama -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Sayfa navigasyonu">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">İlk</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Önceki</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Sonraki</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Son</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-history text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="mt-3 text-muted">Aktivite Bulunamadı</h4>
+                        <p class="text-muted">Henüz hiç kullanıcı aktivitesi bulunmuyor.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form otomatik gönderimi
+    const searchInput = document.getElementById('search');
+    const userSelect = document.getElementById('user');
+    let searchTimeout;
+    
+    function submitForm() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            document.querySelector('form').submit();
+        }, 500);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', submitForm);
+    }
+    
+    if (userSelect) {
+        userSelect.addEventListener('change', () => {
+            document.querySelector('form').submit();
+        });
+    }
+    
+    // Tarih inputları değiştiğinde form gönder
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            document.querySelector('form').submit();
+        });
+    });
+});
+</script>
+{% endblock %}

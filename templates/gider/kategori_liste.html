@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gider Kategorileri{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-tags me-2 text-primary"></i>Gider Kategorileri
+                </h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#kategoriEkleModal">
+                    <i class="fas fa-plus me-1"></i>Yeni Kategori
+                </button>
+            </div>
+            <div class="card-body">
+                {% if kategoriler %}
+                <div class="row">
+                    {% for kategori in kategoriler %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-box me-3" style="background-color: {{ kategori.renk }}20; color: {{ kategori.renk }};">
+                                        <i class="{{ kategori.ikon }}"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ kategori.ad }}</h6>
+                                        <small class="text-muted">{{ kategori.aciklama|default:"Açıklama yok" }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="kategoriDuzenle({{ kategori.id }}, '{{ kategori.ad }}', '{{ kategori.aciklama }}', '{{ kategori.renk }}', '{{ kategori.ikon }}')"
+                                                data-bs-toggle="modal" data-bs-target="#kategoriDuzenleModal">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">{{ kategori.gider_sayisi }} gider</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-tags fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Henüz kategori eklenmemiş</h5>
+                    <p class="text-muted">İlk kategorinizi eklemek için "Yeni Kategori" butonuna tıklayın.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kategori Ekleme Modal -->
+<div class="modal fade" id="kategoriEkleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Yeni Kategori Ekle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'gider:kategori_ekle' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_ad" class="form-label">Kategori Adı <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="id_ad" name="ad" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="id_aciklama" name="aciklama" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="id_renk" class="form-label">Renk</label>
+                            <input type="color" class="form-control form-control-color" id="id_renk" name="renk" value="#007bff">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_ikon" class="form-label">İkon</label>
+                            <select class="form-select" id="id_ikon" name="ikon">
+                                <option value="fas fa-shopping-cart">Alışveriş</option>
+                                <option value="fas fa-utensils">Yemek</option>
+                                <option value="fas fa-gas-pump">Yakıt</option>
+                                <option value="fas fa-tools">Bakım</option>
+                                <option value="fas fa-phone">İletişim</option>
+                                <option value="fas fa-bolt">Elektrik</option>
+                                <option value="fas fa-home">Kira</option>
+                                <option value="fas fa-users">Personel</option>
+                                <option value="fas fa-file-invoice">Fatura</option>
+                                <option value="fas fa-tag">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Kategori Düzenleme Modal -->
+<div class="modal fade" id="kategoriDuzenleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Kategori Düzenle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="kategoriDuzenleForm">
+                {% csrf_token %}
+                <input type="hidden" id="duzenle_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="duzenle_ad" class="form-label">Kategori Adı <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="duzenle_ad" name="ad" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duzenle_aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="duzenle_aciklama" name="aciklama" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="duzenle_renk" class="form-label">Renk</label>
+                            <input type="color" class="form-control form-control-color" id="duzenle_renk" name="renk">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="duzenle_ikon" class="form-label">İkon</label>
+                            <select class="form-select" id="duzenle_ikon" name="ikon">
+                                <option value="fas fa-shopping-cart">Alışveriş</option>
+                                <option value="fas fa-utensils">Yemek</option>
+                                <option value="fas fa-gas-pump">Yakıt</option>
+                                <option value="fas fa-tools">Bakım</option>
+                                <option value="fas fa-phone">İletişim</option>
+                                <option value="fas fa-bolt">Elektrik</option>
+                                <option value="fas fa-home">Kira</option>
+                                <option value="fas fa-users">Personel</option>
+                                <option value="fas fa-file-invoice">Fatura</option>
+                                <option value="fas fa-tag">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Güncelle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+</style>
+
+<script>
+function kategoriDuzenle(id, ad, aciklama, renk, ikon) {
+    document.getElementById('duzenle_id').value = id;
+    document.getElementById('duzenle_ad').value = ad;
+    document.getElementById('duzenle_aciklama').value = aciklama;
+    document.getElementById('duzenle_renk').value = renk;
+    document.getElementById('duzenle_ikon').value = ikon;
+    document.getElementById('kategoriDuzenleForm').action = `/gider/kategori/${id}/duzenle/`;
+}
+</script>
+{% endblock %}

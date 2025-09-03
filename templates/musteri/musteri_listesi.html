@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Müşteri Listesi - Nuvia Otomasyon{% endblock %}
+
+{% block extra_css %}
+<style>
+    .customer-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border-left: 5px solid #3498db;
+    }
+    
+    .customer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .customer-card.kurumsal {
+        border-left-color: #e67e22;
+    }
+    
+    .customer-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .customer-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+        flex: 1;
+    }
+    
+    .customer-type {
+        font-size: 0.85rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .customer-type.bireysel {
+        background: #e8f5e8;
+        color: #27ae60;
+    }
+    
+    .customer-type.kurumsal {
+        background: #fdf2e9;
+        color: #e67e22;
+    }
+    
+    .customer-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+    }
+    
+    .detail-item i {
+        width: 20px;
+        margin-right: 10px;
+        color: #7f8c8d;
+    }
+    
+    .detail-item span {
+        color: #34495e;
+        font-weight: 500;
+    }
+    
+    .customer-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ecf0f1;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    
+    .search-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 15px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-top: 4px solid #3498db;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #95a5a6;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #bdc3c7;
+    }
+    
+    .pagination-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 25px;
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .page-title {
+        color: #2c3e50;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-title i {
+        margin-right: 12px;
+        color: #3498db;
+    }
+    
+    .add-customer-btn {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    
+    .add-customer-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .add-customer-btn i {
+        margin-right: 8px;
+    }
+    
+    @media (max-width: 768px) {
+        .customer-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .customer-actions {
+            justify-content: center;
+        }
+        
+        .search-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-input {
+            min-width: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-users"></i>
+            Müşteri Listesi
+        </h1>
+        <a href="{% url 'musteri:ekle' %}" class="add-customer-btn">
+            <i class="fas fa-user-plus"></i>
+            Yeni Müşteri Ekle
+        </a>
+    </div>
+
+    <!-- Mesajlar -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <strong>
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle"></i>
+                    {% endif %}
+                </strong>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- İstatistikler -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-number">{{ page_obj.paginator.count }}</div>
+            <div class="stat-label">Toplam Müşteri</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ bireysel_count|default:0 }}</div>
+            <div class="stat-label">Bireysel</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ kurumsal_count|default:0 }}</div>
+            <div class="stat-label">Kurumsal</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ aktif_count|default:0 }}</div>
+            <div class="stat-label">Aktif</div>
+        </div>
+    </div>
+
+    <!-- Arama -->
+    <div class="search-container">
+        <form method="get" class="search-form">
+            <div class="search-input">
+                <label for="q" class="form-label">Müşteri Ara</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="q" 
+                       name="q" 
+                       value="{{ query|default:'' }}"
+                       placeholder="Ad, soyad, telefon veya firma adı ile ara...">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Ara
+                </button>
+                {% if query %}
+                    <a href="{% url 'musteri:liste' %}" class="btn btn-secondary ms-2">
+                        <i class="fas fa-times"></i> Temizle
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Müşteri Listesi -->
+    {% if page_obj %}
+        {% for musteri in page_obj %}
+            <div class="customer-card {% if musteri.tip == 'kurumsal' %}kurumsal{% endif %}">
+                <!-- Müşteri Başlık -->
+                <div class="customer-header">
+                    <h3 class="customer-name">
+                        {% if musteri.tip == 'kurumsal' %}
+                            {{ musteri.firma_adi|default:"Firma Adı Girilmemiş" }}
+                        {% else %}
+                            {{ musteri.ad }} {{ musteri.soyad }}
+                        {% endif %}
+                    </h3>
+                    <span class="customer-type {{ musteri.tip }}">
+                        {% if musteri.tip == 'kurumsal' %}
+                            <i class="fas fa-building"></i> Kurumsal
+                        {% else %}
+                            <i class="fas fa-user"></i> Bireysel
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Müşteri Detayları -->
+                <div class="customer-details">
+                    <div class="detail-item">
+                        <i class="fas fa-phone"></i>
+                        <span>{{ musteri.telefon }}</span>
+                    </div>
+                    
+                    {% if musteri.email %}
+                        <div class="detail-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>{{ musteri.email }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if musteri.tip == 'kurumsal' %}
+                        {% if musteri.vergi_no %}
+                            <div class="detail-item">
+                                <i class="fas fa-file-invoice"></i>
+                                <span>VN: {{ musteri.vergi_no }}</span>
+                            </div>
+                        {% endif %}
+                        {% if musteri.vergi_dairesi %}
+                            <div class="detail-item">
+                                <i class="fas fa-university"></i>
+                                <span>{{ musteri.vergi_dairesi }}</span>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        {% if musteri.tc_no %}
+                            <div class="detail-item">
+                                <i class="fas fa-id-card"></i>
+                                <span>TC: {{ musteri.tc_no }}</span>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if musteri.il %}
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ musteri.il }}{% if musteri.ilce %} / {{ musteri.ilce }}{% endif %}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>{{ musteri.kayit_tarihi|date:"d.m.Y" }}</span>
+                    </div>
+                    
+                    {% if musteri.acik_hesap_bakiye != 0 %}
+                        <div class="detail-item">
+                            <i class="fas fa-credit-card"></i>
+                            <span class="{% if musteri.acik_hesap_bakiye < 0 %}text-danger{% else %}text-success{% endif %}">
+                                Bakiye: {{ musteri.acik_hesap_bakiye|floatformat:2 }} ₺
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Müşteri Aksiyonları -->
+                <div class="customer-actions">
+                    <a href="#" class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i> Detay
+                    </a>
+                    <a href="#" class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i> Düzenle
+                    </a>
+                    {% if not musteri.aktif %}
+                        <span class="btn btn-sm btn-secondary disabled">
+                            <i class="fas fa-user-slash"></i> Pasif
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination-container">
+                <nav aria-label="Müşteri listesi sayfalama">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 
+                        (Toplam {{ page_obj.paginator.count }} müşteri)
+                    </small>
+                </div>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Boş Durum -->
+        <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>Henüz müşteri bulunmuyor</h3>
+            <p>İlk müşterinizi eklemek için aşağıdaki butona tıklayın.</p>
+            <a href="{% url 'musteri:ekle' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus"></i> İlk Müşteriyi Ekle
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Arama formunda Enter tuşu
+    $('#q').on('keypress', function(e) {
+        if (e.which === 13) {
+            $(this).closest('form').submit();
+        }
+    });
+    
+    // Müşteri kartlarına tıklama efekti
+    $('.customer-card').on('click', function(e) {
+        if (!$(e.target).closest('.customer-actions').length) {
+            // Detay sayfasına yönlendirme (şimdilik console log)
+            console.log('Müşteri detayına git');
+        }
+    });
+});
+</script>
+{% endblock %}

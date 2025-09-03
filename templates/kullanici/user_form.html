@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-plus me-2"></i>{{ title }}</h2>
+                <a href="{% url 'kullanici:user_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Geri Dön
+                </a>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                {% if form.non_field_errors %}
+                                    <div class="alert alert-danger">
+                                        {{ form.non_field_errors }}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="row">
+                                    <!-- Temel Bilgiler -->
+                                    <div class="col-md-6">
+                                        <h5 class="border-bottom pb-2 mb-3">Temel Bilgiler</h5>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                                Kullanıcı Adı <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.username }}
+                                            {% if form.username.errors %}
+                                                <div class="text-danger small">{{ form.username.errors }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                Sadece harf, rakam ve @/./+/-/_ karakterleri kullanılabilir.
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                                E-posta <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.email }}
+                                            {% if form.email.errors %}
+                                                <div class="text-danger small">{{ form.email.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                                        Ad <span class="text-danger">*</span>
+                                                    </label>
+                                                    {{ form.first_name }}
+                                                    {% if form.first_name.errors %}
+                                                        <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                                        Soyad <span class="text-danger">*</span>
+                                                    </label>
+                                                    {{ form.last_name }}
+                                                    {% if form.last_name.errors %}
+                                                        <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                                Telefon Numarası
+                                            </label>
+                                            {{ form.phone_number }}
+                                            {% if form.phone_number.errors %}
+                                                <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="{{ form.role.id_for_label }}" class="form-label">
+                                                Rol <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.role }}
+                                            {% if form.role.errors %}
+                                                <div class="text-danger small">{{ form.role.errors }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                Kullanıcının sistem içerisindeki yetkilerini belirler.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Şifre Bilgileri -->
+                                    <div class="col-md-6">
+                                        {% if not user_obj %}
+                                            <h5 class="border-bottom pb-2 mb-3">Şifre Bilgileri</h5>
+                                            
+                                            <div class="mb-3">
+                                                <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                                    Şifre <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.password1 }}
+                                                {% if form.password1.errors %}
+                                                    <div class="text-danger small">{{ form.password1.errors }}</div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">
+                                                    En az 8 karakter olmalıdır.
+                                                </small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                                    Şifre Tekrar <span class="text-danger">*</span>
+                                                </label>
+                                                {{ form.password2 }}
+                                                {% if form.password2.errors %}
+                                                    <div class="text-danger small">{{ form.password2.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if user_obj %}
+                                            <h5 class="border-bottom pb-2 mb-3">Ek Bilgiler</h5>
+                                            
+                                            {% if form.address %}
+                                                <div class="mb-3">
+                                                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                                                        Adres
+                                                    </label>
+                                                    {{ form.address }}
+                                                    {% if form.address.errors %}
+                                                        <div class="text-danger small">{{ form.address.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if form.birth_date %}
+                                                <div class="mb-3">
+                                                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">
+                                                        Doğum Tarihi
+                                                    </label>
+                                                    {{ form.birth_date }}
+                                                    {% if form.birth_date.errors %}
+                                                        <div class="text-danger small">{{ form.birth_date.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if form.is_active %}
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        {{ form.is_active }}
+                                                        <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
+                                                            Aktif Kullanıcı
+                                                        </label>
+                                                    </div>
+                                                    {% if form.is_active.errors %}
+                                                        <div class="text-danger small">{{ form.is_active.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                        
+                                        <!-- Rol Açıklamaları -->
+                                        <div class="mt-4">
+                                            <h6>Rol Açıklamaları:</h6>
+                                            <ul class="list-unstyled small">
+                                                <li><strong>Sistem Yöneticisi:</strong> Tüm yetkilere sahip</li>
+                                                <li><strong>Mağaza Müdürü:</strong> Ürün, satış, müşteri yönetimi</li>
+                                                <li><strong>Kasiyer:</strong> Satış ve müşteri işlemleri</li>
+                                                <li><strong>Depo Sorumlusu:</strong> Ürün yönetimi</li>
+                                                <li><strong>Görüntüleme Yetkisi:</strong> Sadece görüntüleme</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>
+                                                {% if user_obj %}Güncelle{% else %}Oluştur{% endif %}
+                                            </button>
+                                            <a href="{% url 'kullanici:user_list' %}" class="btn btn-secondary">
+                                                <i class="fas fa-times me-2"></i>İptal
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validasyonu
+    const form = document.querySelector('form');
+    const requiredFields = form.querySelectorAll('input[required], select[required]');
+    
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        requiredFields.forEach(function(field) {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Lütfen tüm zorunlu alanları doldurun.');
+        }
+    });
+    
+    // Şifre kontrolü
+    const password1 = document.querySelector('#id_password1');
+    const password2 = document.querySelector('#id_password2');
+    
+    if (password1 && password2) {
+        function checkPasswords() {
+            if (password1.value && password2.value) {
+                if (password1.value !== password2.value) {
+                    password2.classList.add('is-invalid');
+                    password2.setCustomValidity('Şifreler eşleşmiyor');
+                } else {
+                    password2.classList.remove('is-invalid');
+                    password2.setCustomValidity('');
+                }
+            }
+        }
+        
+        password1.addEventListener('input', checkPasswords);
+        password2.addEventListener('input', checkPasswords);
+    }
+});
+</script>
+{% endblock %}

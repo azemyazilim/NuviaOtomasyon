@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ user_obj.get_full_name|default:user_obj.username }} - Kullanıcı Detayı{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user me-2"></i>{{ user_obj.get_full_name|default:user_obj.username }}</h2>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'kullanici:user_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Geri Dön
+                    </a>
+                    {% if user.role == 'admin' %}
+                        <a href="{% url 'kullanici:user_edit' user_obj.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>Düzenle
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Kullanıcı Bilgileri -->
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Kullanıcı Bilgileri</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Kullanıcı Adı:</strong></td>
+                                            <td>{{ user_obj.username }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ad Soyad:</strong></td>
+                                            <td>{{ user_obj.get_full_name|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>E-posta:</strong></td>
+                                            <td>{{ user_obj.email|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Telefon:</strong></td>
+                                            <td>{{ user_obj.phone_number|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Rol:</strong></td>
+                                            <td>
+                                                <span class="badge badge-role-{{ user_obj.role }}">
+                                                    {{ user_obj.get_role_display }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Durum:</strong></td>
+                                            <td>
+                                                {% if user_obj.is_active %}
+                                                    <span class="badge bg-success">Aktif</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Pasif</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Oluşturulma:</strong></td>
+                                            <td>{{ user_obj.created_at|date:"d.m.Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Son Güncelleme:</strong></td>
+                                            <td>{{ user_obj.updated_at|date:"d.m.Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Son Giriş:</strong></td>
+                                            <td>
+                                                {% if user_obj.last_login %}
+                                                    {{ user_obj.last_login|date:"d.m.Y H:i" }}
+                                                {% else %}
+                                                    <span class="text-muted">Hiç giriş yapmamış</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Oluşturan:</strong></td>
+                                            <td>
+                                                {% if user_obj.created_by %}
+                                                    {{ user_obj.created_by.get_full_name|default:user_obj.created_by.username }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profil Bilgileri -->
+                    {% if profile %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Profil Bilgileri</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Departman:</strong></td>
+                                            <td>{{ profile.department|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>İşe Başlama:</strong></td>
+                                            <td>
+                                                {% if profile.hire_date %}
+                                                    {{ profile.hire_date|date:"d.m.Y" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Acil Durum İletişim:</strong></td>
+                                            <td>{{ profile.emergency_contact|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Acil Durum Telefonu:</strong></td>
+                                            <td>{{ profile.emergency_phone|default:"-" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if profile.profile_picture %}
+                                        <div class="text-center">
+                                            <img src="{{ profile.profile_picture.url }}" 
+                                                 class="rounded-circle img-thumbnail" 
+                                                 style="width: 150px; height: 150px; object-fit: cover;">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if profile.notes %}
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <strong>Notlar:</strong>
+                                        <p class="mt-2">{{ profile.notes|linebreaks }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Son Aktiviteler -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Son Aktiviteler</h5>
+                            <a href="{% url 'kullanici:user_activity_log' user_obj.id %}" class="btn btn-sm btn-outline-primary">
+                                Tümünü Gör
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_activities %}
+                                <div class="timeline">
+                                    {% for activity in recent_activities %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker bg-{{ activity.action|default:'primary' }}"></div>
+                                            <div class="timeline-content">
+                                                <p class="timeline-title">{{ activity.get_action_display }}</p>
+                                                {% if activity.description %}
+                                                    <p class="text-muted mb-1">{{ activity.description }}</p>
+                                                {% endif %}
+                                                <small class="text-muted">
+                                                    {{ activity.timestamp|date:"d.m.Y H:i" }} - 
+                                                    IP: {{ activity.ip_address }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center py-3">
+                                    <i class="fas fa-clock fa-2x mb-2"></i><br>
+                                    Henüz aktivite kaydı bulunmuyor.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Aktif Oturumlar -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-desktop me-2"></i>Aktif Oturumlar</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if active_sessions %}
+                                {% for session in active_sessions %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                        <div>
+                                            <small class="d-block"><strong>IP:</strong> {{ session.ip_address }}</small>
+                                            <small class="text-muted">{{ session.login_time|date:"d.m.Y H:i" }}</small>
+                                        </div>
+                                        {% if user.role == 'admin' and session.user != user %}
+                                            <button class="btn btn-sm btn-outline-danger terminate-session" 
+                                                    data-session-id="{{ session.id }}" title="Oturumu Sonlandır">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center">Aktif oturum bulunmuyor.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Yetkilendirmeler -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Yetkiler</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for permission in user_obj.get_role_permissions %}
+                                    <div class="col-6 mb-1">
+                                        <small class="badge bg-info">{{ permission }}</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hızlı İşlemler -->
+                    {% if user.role == 'admin' %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Hızlı İşlemler</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if user_obj.is_active %}
+                                    <button class="btn btn-outline-warning btn-sm toggle-status" 
+                                            data-user-id="{{ user_obj.id }}"
+                                            data-current-status="true">
+                                        <i class="fas fa-user-slash me-2"></i>Pasif Yap
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-outline-success btn-sm toggle-status" 
+                                            data-user-id="{{ user_obj.id }}"
+                                            data-current-status="false">
+                                        <i class="fas fa-user-check me-2"></i>Aktif Yap
+                                    </button>
+                                {% endif %}
+                                
+                                {% if user_obj != user %}
+                                    <a href="{% url 'kullanici:user_delete' user_obj.id %}" 
+                                       class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash me-2"></i>Sil
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge-role-admin { background-color: #dc3545; }
+.badge-role-manager { background-color: #fd7e14; }
+.badge-role-cashier { background-color: #20c997; }
+.badge-role-stock_clerk { background-color: #6f42c1; }
+.badge-role-viewer { background-color: #6c757d; }
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.5rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    border-left: 3px solid #dee2e6;
+}
+
+.timeline-title {
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.bg-login { background-color: #28a745 !important; }
+.bg-logout { background-color: #6c757d !important; }
+.bg-create { background-color: #007bff !important; }
+.bg-update { background-color: #ffc107 !important; }
+.bg-delete { background-color: #dc3545 !important; }
+.bg-view { background-color: #17a2b8 !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Durum değiştirme
+    document.querySelectorAll('.toggle-status').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const currentStatus = this.dataset.currentStatus === 'true';
+            
+            if (confirm('Kullanıcının durumunu değiştirmek istediğinizden emin misiniz?')) {
+                fetch(`/kullanici/${userId}/toggle-status/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Bir hata oluştu');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Bir hata oluştu');
+                });
+            }
+        });
+    });
+    
+    // Oturum sonlandırma
+    document.querySelectorAll('.terminate-session').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            
+            if (confirm('Bu oturumu sonlandırmak istediğinizden emin misiniz?')) {
+                fetch(`/kullanici/sessions/${sessionId}/terminate/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Bir hata oluştu');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Bir hata oluştu');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

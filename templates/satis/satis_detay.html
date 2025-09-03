@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Satış Detayı - {{ satis.siparis_no }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sale-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+    }
+    .info-card {
+        border-left: 4px solid #007bff;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    .payment-card {
+        border-left: 4px solid #28a745;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .product-table {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .product-table th {
+        background-color: #343a40;
+        color: white;
+        font-weight: 600;
+        border: none;
+    }
+    .product-table td {
+        border-color: #dee2e6;
+        vertical-align: middle;
+    }
+    .status-badge {
+        font-size: 1rem;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .status-tamamlandi {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .status-beklemede {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    .status-iptal {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .status-iade {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+    .total-section {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+    }
+    .action-buttons .btn {
+        margin: 5px;
+        border-radius: 20px;
+        padding: 10px 20px;
+        font-weight: 600;
+    }
+    .summary-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .amount-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    .order-info {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #dee2e6;
+    }
+    .order-info h6 {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .order-info p {
+        font-size: 1.1rem;
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="sale-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-receipt"></i> Satış Detayı</h2>
+                <h4>{{ satis.siparis_no }}{% if satis.satis_no %} - {{ satis.satis_no }}{% endif %}</h4>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge bg-{% if satis.durum == 'tamamlandi' %}success{% elif satis.durum == 'beklemede' %}warning{% elif satis.durum == 'iptal' %}danger{% else %}info{% endif %}">
+                    {{ satis.get_durum_display }}
+                </span>
+                <div class="mt-2">
+                    <h3>{{ satis.genel_toplam|floatformat:2 }} ₺</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sol Taraf - Satış Bilgileri -->
+        <div class="col-md-8">
+            <!-- Temel Bilgiler -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Satış Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Sipariş No:</strong> {{ satis.siparis_no }}</p>
+                            {% if satis.satis_no %}
+                            <p><strong>Satış No:</strong> {{ satis.satis_no }}</p>
+                            {% endif %}
+                            <p><strong>Sipariş Tarihi:</strong> {{ satis.siparis_tarihi|date:"d.m.Y H:i" }}</p>
+                            {% if satis.satis_tarihi %}
+                            <p><strong>Satış Tarihi:</strong> {{ satis.satis_tarihi|date:"d.m.Y H:i" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Satıcı:</strong> {{ satis.satici.first_name|default:satis.satici.username }}</p>
+                            <p><strong>Müşteri:</strong> 
+                                {% if satis.musteri %}
+                                    {{ satis.musteri.ad }} {{ satis.musteri.soyad }}
+                                    <br><small class="text-muted">{{ satis.musteri.telefon }}</small>
+                                {% else %}
+                                    <span class="text-muted">Bireysel Satış</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Durum:</strong> 
+                                <span class="badge bg-{% if satis.durum == 'tamamlandi' %}success{% elif satis.durum == 'beklemede' %}warning{% elif satis.durum == 'iptal' %}danger{% else %}info{% endif %}">
+                                    {{ satis.get_durum_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    {% if satis.notlar %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Notlar:</strong></p>
+                            <div class="alert alert-info">{{ satis.notlar }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ürün Listesi -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shopping-cart"></i> Satın Alınan Ürünler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped product-table">
+                            <thead>
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th>Birim Fiyat</th>
+                                    <th>Miktar</th>
+                                    <th>Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in satis.satisdetay_set.all %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.urun.ad }}</strong>
+                                        {% if item.urun.barkod %}
+                                        <br><small class="text-muted">Barkod: {{ item.urun.barkod }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.birim_fiyat|floatformat:2 }} ₺</td>
+                                    <td>{{ item.miktar }}</td>
+                                    <td><strong>{{ item.ara_toplam|floatformat:2 }} ₺</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Taraf - Ödeme ve Özet -->
+        <div class="col-md-4">
+            <!-- Tutar Özeti -->
+            <div class="card total-section">
+                <div class="card-header">
+                    <h5><i class="fas fa-calculator"></i> Tutar Özeti</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Ara Toplam:</span>
+                        <strong>{{ satis.ara_toplam|floatformat:2 }} ₺</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>KDV (%{{ satis.kdv_orani }}):</span>
+                        <strong>{{ satis.kdv_tutari|floatformat:2 }} ₺</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><strong>Genel Toplam:</strong></span>
+                        <strong class="text-success fs-5">{{ satis.genel_toplam|floatformat:2 }} ₺</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Toplam Ürün Adedi:</span>
+                        <strong>{{ satis.toplam_urun_adedi }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ödeme Bilgileri -->
+            <div class="card payment-card">
+                <div class="card-header">
+                    <h5><i class="fas fa-credit-card"></i> Ödeme Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    {% if satis.odeme_detaylari %}
+                        {% for odeme in satis.odeme_detaylari %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>
+                                    <i class="fas {% if odeme.odeme_tipi == 'nakit' %}fa-money-bill-wave{% elif odeme.odeme_tipi == 'kart' %}fa-credit-card{% elif odeme.odeme_tipi == 'hediye_ceki' %}fa-gift{% else %}fa-coins{% endif %}"></i>
+                                    {{ odeme.get_odeme_tipi_display }}:
+                                </span>
+                                <strong>{{ odeme.tutar|floatformat:2 }} ₺</strong>
+                            </div>
+                            {% if odeme.odeme_tipi == 'kart' %}
+                                {% if odeme.taksit_sayisi and odeme.taksit_sayisi > 1 %}
+                                <div class="mt-1">
+                                    <small class="text-info">
+                                        <i class="fas fa-calendar-alt"></i> 
+                                        {{ odeme.taksit_sayisi }} taksit
+                                    </small>
+                                </div>
+                                {% else %}
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-credit-card"></i> Tek çekim
+                                    </small>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                            {% if odeme.hediye_ceki_kodu %}
+                            <div class="mt-1">
+                                <small class="text-warning">
+                                    <i class="fas fa-barcode"></i> Kod: {{ odeme.hediye_ceki_kodu }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span><strong>Toplam Ödenen:</strong></span>
+                            <strong class="text-success">{{ satis.toplam_odenen|floatformat:2 }} ₺</strong>
+                        </div>
+                        {% if satis.kalan_tutar > 0 %}
+                        <div class="d-flex justify-content-between text-danger">
+                            <span><strong>Kalan Tutar:</strong></span>
+                            <strong>{{ satis.kalan_tutar|floatformat:2 }} ₺</strong>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">Ödeme bilgisi bulunamadı.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- İşlem Butonları -->
+            <div class="card mt-3">
+                <div class="card-body text-center action-buttons">
+                    <a href="{% url 'satis:liste' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Geri Dön
+                    </a>
+                    {% if satis.durum == 'tamamlandi' %}
+                    <a href="{% url 'satis:yazdir' satis.pk %}" class="btn btn-success" target="_blank">
+                        <i class="fas fa-print"></i> Yazdır
+                    </a>
+                    <a href="{% url 'satis:satis_iade' satis.pk %}" class="btn btn-info">
+                        <i class="fas fa-undo"></i> İade
+                    </a>
+                    {% endif %}
+                    {% if satis.durum == 'beklemede' %}
+                    <a href="{% url 'satis:satis_iptal' satis.pk %}" class="btn btn-danger">
+                        <i class="fas fa-ban"></i> İptal
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sayfa yüklendiğinde animasyon
+document.addEventListener('DOMContentLoaded', function() {
+    // Kartları sırayla göster
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Yazdırma işlemi için özel fonksiyon
+function printReceipt() {
+    const printWindow = window.open('{% url "satis:yazdir" satis.pk %}', '_blank');
+    printWindow.onload = function() {
+        printWindow.print();
+    };
+}
+</script>
+{% endblock %}

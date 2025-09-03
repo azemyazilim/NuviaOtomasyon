@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-chart-pie"></i> {{ title }}</h4>
+                    
+                    <!-- Tarih Filtresi -->
+                    <div class="btn-group">
+                        <a href="?tarih=bugun" class="btn btn-sm {% if tarih_filtre == 'bugun' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                            Bugün
+                        </a>
+                        <a href="?tarih=7" class="btn btn-sm {% if tarih_filtre == '7' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                            Son 7 Gün
+                        </a>
+                        <a href="?tarih=30" class="btn btn-sm {% if tarih_filtre == '30' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                            Son 30 Gün
+                        </a>
+                        <a href="?tarih=ay" class="btn btn-sm {% if tarih_filtre == 'ay' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                            Bu Ay
+                        </a>
+                        <a href="?tarih=yil" class="btn btn-sm {% if tarih_filtre == 'yil' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                            Bu Yıl
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Özet Kartlar -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-shopping-cart"></i> Toplam Alış</h5>
+                                    <h4>{{ toplam_alis_tutari|floatformat:2 }} ₺</h4>
+                                    <small>{{ toplam_adet }} adet ürün</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-cash-register"></i> Toplam Satış</h5>
+                                    <h4>{{ toplam_satis_tutari|floatformat:2 }} ₺</h4>
+                                    <small>{{ satis_sayisi }} satış işlemi</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card {% if toplam_kar >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-chart-line"></i> {% if toplam_kar >= 0 %}Toplam Kar{% else %}Toplam Zarar{% endif %}</h5>
+                                    <h4>{{ toplam_kar|floatformat:2 }} ₺</h4>
+                                    <small>%{{ kar_marji_yuzde|floatformat:1 }} kar marjı</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-calendar"></i> Tarih Aralığı</h5>
+                                    <h6>{{ baslangic_tarihi|date:"d.m.Y" }}</h6>
+                                    <h6>{{ bitis_tarihi|date:"d.m.Y" }}</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Bazında Kar Analizi -->
+                    {% if kategori_kar %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-tags"></i> Kategori Bazında Kar Analizi</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Kategori</th>
+                                            <th class="text-center">Satılan Adet</th>
+                                            <th class="text-end">Alış Tutarı</th>
+                                            <th class="text-end">Satış Tutarı</th>
+                                            <th class="text-end">Kar/Zarar</th>
+                                            <th class="text-center">Kar Marjı</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for kategori, veri in kategori_kar.items %}
+                                        <tr>
+                                            <td><span class="badge bg-secondary">{{ kategori }}</span></td>
+                                            <td class="text-center">{{ veri.adet }}</td>
+                                            <td class="text-end">{{ veri.alis|floatformat:2 }} ₺</td>
+                                            <td class="text-end">{{ veri.satis|floatformat:2 }} ₺</td>
+                                            <td class="text-end {% if veri.kar >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ veri.kar|floatformat:2 }} ₺
+                                            </td>
+                                            <td class="text-center {% if veri.kar_yuzde >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                %{{ veri.kar_yuzde|floatformat:1 }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Detaylı Kar Analizi -->
+                    {% if kar_detaylari %}
+                    <div class="row">
+                        <div class="col-12">
+                            <h5><i class="fas fa-list"></i> Detaylı Kar Analizi (En Karlı 100 İşlem)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover table-sm">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th width="5%">Sıra</th>
+                                            <th width="20%">Ürün</th>
+                                            <th width="15%">Kategori</th>
+                                            <th width="8%" class="text-center">Adet</th>
+                                            <th width="12%" class="text-end">Alış</th>
+                                            <th width="12%" class="text-end">Satış</th>
+                                            <th width="12%" class="text-end">Kar/Zarar</th>
+                                            <th width="8%" class="text-center">Marj</th>
+                                            <th width="8%">Tarih</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for detay in kar_detaylari %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">{{ forloop.counter }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ detay.urun.ad }}</strong><br>
+                                                <small class="text-muted">{{ detay.urun.barkod }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ detay.urun.kategori.ad|default:"Kategori Yok" }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                {{ detay.miktar }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{ detay.alis_tutari|floatformat:2 }} ₺
+                                            </td>
+                                            <td class="text-end">
+                                                {{ detay.satis_tutari|floatformat:2 }} ₺
+                                            </td>
+                                            <td class="text-end {% if detay.kar >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                <strong>{{ detay.kar|floatformat:2 }} ₺</strong>
+                                            </td>
+                                            <td class="text-center {% if detay.kar_yuzde >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                %{{ detay.kar_yuzde|floatformat:1 }}
+                                            </td>
+                                            <td>
+                                                <small>{{ detay.tarih|date:"d.m.Y" }}</small>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                        <div class="alert alert-info text-center py-5">
+                            <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                            <h4>{{ tarih_baslik }} için kar/zarar verisi bulunamadı</h4>
+                            <p class="mb-0">Seçilen tarih aralığında hiç satış yapılmamış veya kayıt bulunmuyor.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Kar marjına göre renklendirme
+    const marjCells = document.querySelectorAll('[data-kar-marji]');
+    marjCells.forEach(cell => {
+        const marj = parseFloat(cell.dataset.karMarji);
+        if (marj >= 30) {
+            cell.classList.add('text-success', 'fw-bold');
+        } else if (marj >= 10) {
+            cell.classList.add('text-warning');
+        } else if (marj < 0) {
+            cell.classList.add('text-danger', 'fw-bold');
+        }
+    });
+});
+</script>
+{% endblock %}

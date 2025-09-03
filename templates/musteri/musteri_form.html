@@ -1,0 +1,549 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Müşteri Ekle - Nuvia Otomasyon{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin: 20px 0;
+    }
+    
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #2c3e50;
+    }
+    
+    .form-header h2 {
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    
+    .form-header p {
+        color: #7f8c8d;
+        margin-bottom: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #34495e;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px 15px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+    
+    .alert {
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+    }
+    
+    .required {
+        color: #e74c3c;
+    }
+    
+    .form-row {
+        margin: 0 -10px;
+    }
+    
+    .form-row .col-md-6 {
+        padding: 0 10px;
+    }
+    
+    .customer-icon {
+        font-size: 48px;
+        color: #3498db;
+        margin-bottom: 15px;
+    }
+    
+    .conditional-fields {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 15px 0;
+        transition: all 0.3s ease;
+    }
+    
+    .conditional-fields.active {
+        background: #e8f5e8;
+        border-color: #28a745;
+    }
+    
+    .section-header {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-header i {
+        margin-right: 8px;
+        color: #3498db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-user-plus customer-icon"></i>
+                    <h2>Yeni Müşteri Ekle</h2>
+                    <p>Müşteri bilgilerini doldurun ve sisteme kaydedin</p>
+                </div>
+
+                <!-- Mesajlar -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <strong>
+                                {% if message.tags == 'success' %}
+                                    <i class="fas fa-check-circle"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="fas fa-exclamation-circle"></i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                {% endif %}
+                            </strong>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" id="musteriForm">
+                    {% csrf_token %}
+                    
+                    <!-- Temel Bilgiler -->
+                    <div class="row form-row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="ad" class="form-label">
+                                    Ad <span class="required">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="ad" 
+                                       name="ad" 
+                                       value="{{ request.POST.ad|default:'' }}"
+                                       required
+                                       placeholder="Müşteri adı">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="soyad" class="form-label">
+                                    Soyad <span class="required">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="soyad" 
+                                       name="soyad" 
+                                       value="{{ request.POST.soyad|default:'' }}"
+                                       required
+                                       placeholder="Müşteri soyadı">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İletişim Bilgileri -->
+                    <div class="row form-row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="telefon" class="form-label">
+                                    Telefon <span class="required">*</span>
+                                </label>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="telefon" 
+                                       name="telefon" 
+                                       value="{{ request.POST.telefon|default:'' }}"
+                                       required
+                                       placeholder="0555 123 45 67"
+                                       pattern="[0-9\s\-\(\)\+]{10,15}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email" class="form-label">E-posta</label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ request.POST.email|default:'' }}"
+                                       placeholder="ornek@email.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adres Bilgileri -->
+                    <div class="form-group">
+                        <label for="adres" class="form-label">Adres</label>
+                        <textarea class="form-control" 
+                                  id="adres" 
+                                  name="adres" 
+                                  rows="3" 
+                                  placeholder="Müşteri adresi">{{ request.POST.adres|default:'' }}</textarea>
+                    </div>
+
+                    <div class="row form-row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="il" class="form-label">İl</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="il" 
+                                       name="il" 
+                                       value="{{ request.POST.il|default:'' }}"
+                                       placeholder="İl adı">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="ilce" class="form-label">İlçe</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="ilce" 
+                                       name="ilce" 
+                                       value="{{ request.POST.ilce|default:'' }}"
+                                       placeholder="İlçe adı">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Müşteri Tipi -->
+                    <div class="form-group">
+                        <label for="tip" class="form-label">Müşteri Tipi</label>
+                        <select class="form-control" id="tip" name="tip">
+                            <option value="bireysel" {% if request.POST.tip == 'bireysel' or not request.POST.tip %}selected{% endif %}>Bireysel</option>
+                            <option value="kurumsal" {% if request.POST.tip == 'kurumsal' %}selected{% endif %}>Kurumsal</option>
+                        </select>
+                    </div>
+
+                    <!-- Bireysel Müşteri Alanları -->
+                    <div id="bireyselAlanlari" class="conditional-fields">
+                        <div class="section-header">
+                            <i class="fas fa-user"></i>
+                            Bireysel Müşteri Bilgileri
+                        </div>
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tc_no" class="form-label">TC Kimlik No</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="tc_no" 
+                                           name="tc_no" 
+                                           value="{{ request.POST.tc_no|default:'' }}"
+                                           placeholder="11 haneli TC kimlik numarası"
+                                           maxlength="11"
+                                           pattern="[0-9]{11}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="vergi_no_bireysel" class="form-label">Vergi Numarası</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="vergi_no_bireysel" 
+                                           name="vergi_no" 
+                                           value="{{ request.POST.vergi_no|default:'' }}"
+                                           placeholder="Vergi numarası (opsiyonel)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kurumsal Müşteri Alanları -->
+                    <div id="kurumsalAlanlari" class="conditional-fields" style="display: none;">
+                        <div class="section-header">
+                            <i class="fas fa-building"></i>
+                            Kurumsal Müşteri Bilgileri
+                        </div>
+                        <div class="form-group">
+                            <label for="firma_adi" class="form-label">Firma Adı <span class="required">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="firma_adi" 
+                                   name="firma_adi" 
+                                   value="{{ request.POST.firma_adi|default:'' }}"
+                                   placeholder="Firma/Şirket adı">
+                        </div>
+                        
+                        <div class="row form-row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="vergi_no_kurumsal" class="form-label">Vergi Numarası <span class="required">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="vergi_no_kurumsal" 
+                                           name="vergi_no" 
+                                           value="{{ request.POST.vergi_no|default:'' }}"
+                                           placeholder="Vergi numarası">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="vergi_dairesi" class="form-label">Vergi Dairesi <span class="required">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="vergi_dairesi" 
+                                           name="vergi_dairesi" 
+                                           value="{{ request.POST.vergi_dairesi|default:'' }}"
+                                           placeholder="Vergi dairesi adı">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notlar -->
+                    <div class="form-group">
+                        <label for="notlar" class="form-label">Notlar</label>
+                        <textarea class="form-control" 
+                                  id="notlar" 
+                                  name="notlar" 
+                                  rows="3" 
+                                  placeholder="Müşteri hakkında notlar">{{ request.POST.notlar|default:'' }}</textarea>
+                    </div>
+
+                    <!-- Butonlar -->
+                    <div class="form-group text-center">
+                        <button type="submit" class="btn btn-primary me-3">
+                            <i class="fas fa-save"></i> Müşteri Kaydet
+                        </button>
+                        <a href="{% url 'musteri:liste' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Geri Dön
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Müşteri tipi değişikliği
+    function toggleFields() {
+        const tip = $('#tip').val();
+        if (tip === 'kurumsal') {
+            $('#kurumsalAlanlari').show().addClass('active');
+            $('#bireyselAlanlari').hide().removeClass('active');
+            
+            // Kurumsal alanları zorunlu yap
+            $('#firma_adi').prop('required', true);
+            $('#vergi_no_kurumsal').prop('required', true);
+            $('#vergi_dairesi').prop('required', true);
+            
+            // Bireysel alanları zorunlu yapma
+            $('#tc_no').prop('required', false);
+            $('#vergi_no_bireysel').prop('required', false);
+        } else {
+            $('#bireyselAlanlari').show().addClass('active');
+            $('#kurumsalAlanlari').hide().removeClass('active');
+            
+            // Bireysel alanları zorunlu yapma (TC opsiyonel)
+            $('#tc_no').prop('required', false);
+            $('#vergi_no_bireysel').prop('required', false);
+            
+            // Kurumsal alanları zorunlu yapma
+            $('#firma_adi').prop('required', false);
+            $('#vergi_no_kurumsal').prop('required', false);
+            $('#vergi_dairesi').prop('required', false);
+        }
+    }
+    
+    // Sayfa yüklendiğinde initial state
+    toggleFields();
+    
+    // Tip değişikliğinde
+    $('#tip').on('change', toggleFields);
+
+    // TC Kimlik No formatlaması
+    $('#tc_no').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length > 11) {
+            value = value.substring(0, 11);
+        }
+        $(this).val(value);
+    });
+
+    // Telefon numarası formatlaması
+    $('#telefon').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length > 0) {
+            if (value.length <= 4) {
+                value = value.replace(/(\d{4})/, '$1');
+            } else if (value.length <= 7) {
+                value = value.replace(/(\d{4})(\d{3})/, '$1 $2');
+            } else if (value.length <= 9) {
+                value = value.replace(/(\d{4})(\d{3})(\d{2})/, '$1 $2 $3');
+            } else {
+                value = value.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+            }
+        }
+        $(this).val(value);
+    });
+
+    // Form validasyonu
+    $('#musteriForm').on('submit', function(e) {
+        let isValid = true;
+        let errorMessage = '';
+        const tip = $('#tip').val();
+
+        // Ad kontrolü
+        if ($('#ad').val().trim() === '') {
+            isValid = false;
+            errorMessage += 'Ad alanı zorunludur.\n';
+        }
+
+        // Soyad kontrolü
+        if ($('#soyad').val().trim() === '') {
+            isValid = false;
+            errorMessage += 'Soyad alanı zorunludur.\n';
+        }
+
+        // Telefon kontrolü
+        let telefon = $('#telefon').val().replace(/\D/g, '');
+        if (telefon.length < 10) {
+            isValid = false;
+            errorMessage += 'Telefon numarası en az 10 haneli olmalıdır.\n';
+        }
+
+        // E-posta kontrolü (opsiyonel ama format kontrolü)
+        let email = $('#email').val().trim();
+        if (email !== '' && !email.includes('@')) {
+            isValid = false;
+            errorMessage += 'Geçerli bir e-posta adresi giriniz.\n';
+        }
+
+        // Tip özelinde kontrollar
+        if (tip === 'kurumsal') {
+            if ($('#firma_adi').val().trim() === '') {
+                isValid = false;
+                errorMessage += 'Firma adı zorunludur.\n';
+            }
+            if ($('#vergi_no_kurumsal').val().trim() === '') {
+                isValid = false;
+                errorMessage += 'Vergi numarası zorunludur.\n';
+            }
+            if ($('#vergi_dairesi').val().trim() === '') {
+                isValid = false;
+                errorMessage += 'Vergi dairesi zorunludur.\n';
+            }
+        } else {
+            // Bireysel müşteri için TC kontrolü (opsiyonel ama format kontrolü)
+            let tcNo = $('#tc_no').val().trim();
+            if (tcNo !== '' && tcNo.length !== 11) {
+                isValid = false;
+                errorMessage += 'TC kimlik numarası 11 haneli olmalıdır.\n';
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('Lütfen aşağıdaki hataları düzeltin:\n\n' + errorMessage);
+            return false;
+        }
+
+        // Loading state
+        $(this).find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...');
+    });
+
+    // İl/İlçe listesi (opsiyonel - basit versiyon)
+    const iller = [
+        'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Amasya', 'Ankara', 'Antalya', 'Artvin',
+        'Aydın', 'Balıkesir', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa',
+        'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Edirne', 'Elazığ', 'Erzincan',
+        'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Isparta',
+        'Mersin', 'İstanbul', 'İzmir', 'Kars', 'Kastamonu', 'Kayseri', 'Kırklareli', 'Kırşehir',
+        'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa', 'Kahramanmaraş', 'Mardin', 'Muğla',
+        'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Rize', 'Sakarya', 'Samsun', 'Siirt', 'Sinop',
+        'Sivas', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Şanlıurfa', 'Uşak', 'Van',
+        'Yozgat', 'Zonguldak', 'Aksaray', 'Bayburt', 'Karaman', 'Kırıkkale', 'Batman', 'Şırnak',
+        'Bartın', 'Ardahan', 'Iğdır', 'Yalova', 'Karabük', 'Kilis', 'Osmaniye', 'Düzce'
+    ];
+
+    // İl alanına autocomplete özelliği
+    $('#il').on('input', function() {
+        let value = $(this).val().toLowerCase();
+        let matches = iller.filter(il => il.toLowerCase().includes(value));
+        
+        // Basit autocomplete (datalist kullanarak)
+        if (!$('#ilDatalist').length) {
+            $('body').append('<datalist id="ilDatalist"></datalist>');
+            $('#il').attr('list', 'ilDatalist');
+        }
+        
+        $('#ilDatalist').empty();
+        matches.slice(0, 10).forEach(il => {
+            $('#ilDatalist').append('<option value="' + il + '">');
+        });
+    });
+});
+</script>
+{% endblock %}

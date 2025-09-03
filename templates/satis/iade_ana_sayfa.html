@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Satış İade İşlemleri{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .satis-card {
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .satis-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        border-color: #007bff;
+    }
+    
+    .satis-no {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .musteri-bilgi {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .tutar-bilgi {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .tarih-bilgi {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .search-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="header-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-undo me-3"></i>Satış İade İşlemleri
+                </h1>
+                <p class="mb-0 opacity-75">
+                    İade yapılacak satışı seçin ve iade işlemini gerçekleştirin
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex flex-column align-items-end">
+                    <div class="h4 mb-1">{{ page_obj.paginator.count }}</div>
+                    <div class="opacity-75">İade Edilebilir Satış</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arama Bölümü -->
+    <div class="search-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-search me-2"></i>Satış Ara
+                </label>
+                <input type="text" class="form-control form-control-lg" 
+                       name="search" value="{{ search_query }}" 
+                       placeholder="Satış No, müşteri adı, soyadı veya telefon numarası ile arayın...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary btn-lg me-2">
+                    <i class="fas fa-search"></i> Ara
+                </button>
+                <a href="{% url 'satis:iade_ana_sayfa' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Satış Listesi -->
+    <div class="row">
+        {% for satis in page_obj %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="satis-card" onclick="window.location.href='{% url 'satis:satis_iade' satis.pk %}'">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="satis-no">#{{ satis.satis_no }}</div>
+                        <div class="tarih-bilgi">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ satis.tarih|date:"d.m.Y H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="tutar-bilgi">{{ satis.toplam_tutar|floatformat:2 }} ₺</div>
+                        <small class="text-muted">{{ satis.satisdetay_set.count }} ürün</small>
+                    </div>
+                </div>
+                
+                <div class="musteri-bilgi mb-3">
+                    <i class="fas fa-user me-2"></i>
+                    {% if satis.musteri %}
+                        {{ satis.musteri.ad }} {{ satis.musteri.soyad }}
+                        {% if satis.musteri.telefon %}
+                            <br><i class="fas fa-phone me-2"></i>{{ satis.musteri.telefon }}
+                        {% endif %}
+                    {% else %}
+                        Bireysel Müşteri
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="small text-muted">
+                        <i class="fas fa-credit-card me-1"></i>
+                        {{ satis.get_odeme_yontemi_display }}
+                    </div>
+                    <div class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h5>İade Edilebilir Satış Bulunamadı</h5>
+                <p class="mb-0">
+                    {% if search_query %}
+                        "{{ search_query }}" araması için sonuç bulunamadı.
+                        <br>Farklı bir arama terimi deneyin.
+                    {% else %}
+                        Son 30 gün içinde tamamlanmış satış bulunmuyor.
+                        <br>İade işlemi sadece tamamlanmış satışlar için yapılabilir.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Sayfalama -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Sayfa navigasyonu" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Yardım Bilgisi -->
+    <div class="alert alert-info mt-4">
+        <h6 class="alert-heading">
+            <i class="fas fa-info-circle me-2"></i>İade İşlemi Hakkında
+        </h6>
+        <ul class="mb-0">
+            <li>Sadece tamamlanmış satışlar iade edilebilir</li>
+            <li>İade işlemi sonucunda hediye çeki oluşturulur</li>
+            <li>Son 30 gün içindeki satışlar görüntülenir</li>
+            <li>Satış kartına tıklayarak iade işlemini başlatabilirsiniz</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

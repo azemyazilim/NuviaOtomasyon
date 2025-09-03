@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Ürün Ekle - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+    }
+    
+    .btn-secondary {
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+    
+    .image-preview {
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .image-preview img {
+        max-width: 100%;
+        max-height: 150px;
+        border-radius: 8px;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    .form-floating > label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .input-group-text {
+        border-radius: 10px 0 0 10px;
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-right: none;
+    }
+    
+    .input-group .form-control {
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+    }
+    
+    @media (max-width: 768px) {
+        .form-section {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-1">
+                <i class="fas fa-plus-circle me-2"></i>Yeni Ürün Ekle
+            </h2>
+            <p class="text-muted mb-0">Sisteme yeni ürün kayıt edebilirsiniz</p>
+        </div>
+        <div>
+            <a href="{% url 'urun:liste' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Ürün Listesi
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="urunForm">
+        {% csrf_token %}
+        
+        <!-- Temel Bilgiler -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-info-circle me-2"></i>Temel Bilgiler
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-hashtag"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="sku" name="sku" placeholder="Ürün Kodu"
+                                   value="{% if urun %}{{ urun.sku }}{% endif %}">
+                            <label for="sku">Ürün Kodu</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="ad" name="ad" placeholder="Ürün Adı" 
+                               value="{% if urun %}{{ urun.ad }}{% endif %}" required>
+                        <label for="ad">Ürün Adı <span class="required">*</span></label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-barcode"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="barkod" name="barkod" placeholder="Barkod"
+                                   value="{% if barkod_param %}{{ barkod_param }}{% elif urun %}{{ urun.barkod }}{% endif %}" autofocus>
+                            <label for="barkod">Barkod</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        <select class="form-select" id="kategori" name="kategori" required>
+                            <option value="">Kategori Seçin</option>
+                            {% for kategori in ust_kategoriler %}
+                                <option value="{{ kategori.id }}" 
+                                    {% if urun and urun.kategori and urun.kategori.id == kategori.id %}selected{% endif %}>
+                                    {{ kategori.ad }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <label for="kategori">Kategori <span class="required">*</span></label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        <select class="form-select" id="marka" name="marka">
+                            <option value="">Marka Seçin</option>
+                            {% for marka in markalar %}
+                                <option value="{{ marka.id }}" 
+                                    {% if urun and urun.marka and urun.marka.id == marka.id %}selected{% endif %}>
+                                    {{ marka.ad }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <label for="marka">
+                            <i class="fas fa-copyright me-1"></i>Marka
+                        </label>
+                        <div id="markaHelp" class="form-text">
+                            Ürünün markasını seçin veya boş bırakın.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="form-floating">
+                        <select class="form-select" id="cinsiyet" name="cinsiyet">
+                            <option value="kadin" {% if urun and urun.cinsiyet == 'kadin' %}selected{% elif not urun %}selected{% endif %}>Kadın</option>
+                            <option value="erkek" {% if urun and urun.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                        </select>
+                        <label for="cinsiyet">
+                            <i class="fas fa-venus-mars me-1"></i>Cinsiyet
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+
+        </div>
+
+        <!-- Fiyat ve Stok Bilgileri -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-money-bill-wave me-2"></i>Fiyat ve Stok Bilgileri
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-shopping-cart"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="alis_fiyati" name="alis_fiyati" step="0.01" min="0" placeholder="Alış Fiyatı" 
+                                   value="{% if urun %}{{ urun.alis_fiyati }}{% endif %}" oninput="calculateSalePrice()">
+                            <label for="alis_fiyati">Alış Fiyatı (₺)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-percentage"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="kar_orani" name="kar_orani" step="0.01" min="0" max="1000" placeholder="Kar Oranı" 
+                                   value="{% if urun %}{{ urun.kar_orani }}{% endif %}" oninput="calculateSalePrice()">
+                            <label for="kar_orani">Kar Oranı (%)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-tag"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="satis_fiyati" name="satis_fiyati" step="0.01" min="0" placeholder="Satış Fiyatı" 
+                                   value="{% if urun %}{{ urun.satis_fiyati }}{% endif %}" required readonly>
+                            <label for="satis_fiyati">Satış Fiyatı (₺) <span class="required">*</span></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-boxes"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="stok_miktari" name="stok_miktari" min="0" placeholder="Stok Miktarı"
+                                   value="{% if urun %}{{ urun.stok_miktari }}{% endif %}">
+                            <label for="stok_miktari">Stok Miktarı</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="kritik_stok" name="kritik_stok" min="0" placeholder="Kritik Stok Seviyesi">
+                            <label for="kritik_stok">Kritik Stok Seviyesi</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        <select class="form-select" id="birim" name="birim" required>
+                            <option value="">Birim Seçin</option>
+                            <option value="Adet" selected>Adet</option>
+                            <option value="Takım">Takım</option>
+                        </select>
+                        <label for="birim">Birim <span class="required">*</span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ürün Görseli -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-image me-2"></i>Ürün Görseli
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <input type="file" class="form-control" id="resim" name="resim" accept="image/*" onchange="previewImage(this)">
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Desteklenen formatlar: JPG, PNG, GIF (Maksimum 5MB)
+                    </small>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="image-preview" id="imagePreview">
+                        <i class="fas fa-image text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Görsel Önizlemesi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Durum ve Diğer Bilgiler -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-cog me-2"></i>Durum ve Diğer Bilgiler
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="aktif" name="aktif" checked>
+                        <label class="form-check-label" for="aktif">
+                            <i class="fas fa-toggle-on me-1"></i>Ürün Aktif
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="stok_takibi" name="stok_takibi" checked>
+                        <label class="form-check-label" for="stok_takibi">
+                            <i class="fas fa-chart-line me-1"></i>Stok Takibi Yapılsın
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kaydet Butonları -->
+        <div class="form-section">
+            <div class="d-flex gap-3 justify-content-end">
+                <a href="{% url 'urun:liste' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>İptal
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Ürünü Kaydet
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Görsel önizleme fonksiyonu
+    function previewImage(input) {
+        const preview = document.getElementById('imagePreview');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" alt="Ürün Görseli" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                    <p class="text-muted mt-2 mb-0">${input.files[0].name}</p>
+                `;
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.innerHTML = `
+                <i class="fas fa-image text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-2">Görsel Önizlemesi</p>
+            `;
+        }
+    }
+
+    // Form validasyonu
+    document.getElementById('urunForm').addEventListener('submit', function(e) {
+        // Stok miktarını kontrol et - boşsa 0 yap
+        const stokMiktariField = document.getElementById('stok_miktari');
+        if (stokMiktariField.value === '' || stokMiktariField.value === null) {
+            stokMiktariField.value = '0';
+        }
+        
+        const requiredFields = this.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            
+            // İlk hatalı alana odaklan
+            const firstInvalid = this.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Hata mesajı göster
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Lütfen zorunlu alanları doldurun!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // 5 saniye sonra otomatik kapat
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    });
+
+    // Barkod otomatik oluşturma (isteğe bağlı)
+    document.getElementById('ad').addEventListener('blur', function() {
+        const barkodField = document.getElementById('barkod');
+        if (!barkodField.value && this.value) {
+            // Basit barkod oluşturma
+            const timestamp = Date.now().toString().slice(-6);
+            const productCode = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+            barkodField.value = productCode + timestamp;
+        }
+    });
+
+    // Kar oranına göre satış fiyatı hesaplama
+    function calculateSalePrice() {
+        const alisFiyati = parseFloat(document.getElementById('alis_fiyati').value) || 0;
+        const karOrani = parseFloat(document.getElementById('kar_orani').value) || 0;
+        const satisFiyatiField = document.getElementById('satis_fiyati');
+        
+        if (alisFiyati > 0 && karOrani >= 0) {
+            const satisFiyati = alisFiyati + (alisFiyati * karOrani / 100);
+            satisFiyatiField.value = satisFiyati.toFixed(2);
+        } else if (alisFiyati > 0) {
+            satisFiyatiField.value = alisFiyati.toFixed(2);
+        } else {
+            satisFiyatiField.value = '';
+        }
+    }
+
+    // Stok miktarı boş olduğunda 0 yap
+    document.getElementById('stok_miktari').addEventListener('blur', function() {
+        if (this.value === '' || this.value === null) {
+            this.value = '0';
+        }
+    });
+
+    // Sayfa yüklendiğinde barkod alanına odaklan
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('barkod').focus();
+    });
+</script>
+{% endblock %}

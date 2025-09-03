@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satış Fişi - {{ satis.siparis_no }}</title>
+    <style>
+        /* 80mm Termal Yazıcı için Özel CSS */
+        @page {
+            size: 80mm auto;
+            margin: 2mm;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            margin: 0;
+            padding: 2mm;
+            width: 76mm;
+            color: #000;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .company-info {
+            font-size: 10px;
+            margin-bottom: 1px;
+        }
+        
+        .receipt-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .transaction-info {
+            margin: 5px 0;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+        
+        .items-section {
+            margin: 5px 0;
+        }
+        
+        .item-header {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 2px 0;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        .item-row {
+            padding: 2px 0;
+            font-size: 11px;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 1px;
+        }
+        
+        .item-details {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .totals-section {
+            border-top: 1px dashed #000;
+            padding-top: 5px;
+            margin-top: 5px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+        
+        .grand-total {
+            font-weight: bold;
+            font-size: 13px;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 3px 0;
+            margin: 3px 0;
+        }
+        
+        .payment-section {
+            margin: 5px 0;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 10px;
+        }
+        
+        .mali-deger {
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 2px;
+            margin: 5px 0;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .barcode {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            margin: 5px 0;
+        }
+        
+        @media print {
+            body {
+                width: 76mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Button (hidden when printing) -->
+    <div class="no-print" style="text-align: center; margin-bottom: 10px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <i class="fas fa-print"></i> Yazdır
+        </button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 14px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+            Kapat
+        </button>
+    </div>
+
+    <!-- Receipt Header -->
+    <div class="header">
+        <div class="company-name">NUVİA OTOMASYON</div>
+        <div class="company-info">Stok ve Satış Yönetim Sistemi</div>
+        <div class="company-info">Tel: (0xxx) xxx xx xx</div>
+        <div class="receipt-title">SATIŞ FİŞİ</div>
+    </div>
+
+    <!-- Transaction Information -->
+    <div class="transaction-info">
+        <div class="info-row">
+            <span>Fiş No:</span>
+            <span>{{ satis.siparis_no }}</span>
+        </div>
+        <div class="info-row">
+            <span>Tarih:</span>
+            <span>{{ satis.created_at|date:"d.m.Y" }}</span>
+        </div>
+        <div class="info-row">
+            <span>Saat:</span>
+            <span>{{ satis.created_at|date:"H:i" }}</span>
+        </div>
+        {% if satis.musteri %}
+        <div class="info-row">
+            <span>Müşteri:</span>
+            <span>{{ satis.musteri.ad }} {{ satis.musteri.soyad }}</span>
+        </div>
+        {% if satis.musteri.telefon %}
+        <div class="info-row">
+            <span>Tel:</span>
+            <span>{{ satis.musteri.telefon }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
+        <div class="info-row">
+            <span>Kasiyer:</span>
+            <span>{{ satis.created_by.username|default:"Sistem" }}</span>
+        </div>
+    </div>
+
+    <!-- Items Section -->
+    <div class="items-section">
+        <div class="item-header">
+            ÜRÜN DETAYLARI
+        </div>
+        
+        {% for item in satis.satisdetay_set.all %}
+        <div class="item-row">
+            <div class="item-name">{{ item.urun.ad|default:"Ürün Adı Yok" }}</div>
+            <div class="item-details">
+                <span>{{ item.miktar|floatformat:0|default:"0" }} x {{ item.birim_fiyat|floatformat:2|default:"0.00" }} ₺</span>
+                {% if item.indirim_tutari > 0 %}
+                <span>{{ item.indirimsiz_toplam|floatformat:2 }} ₺</span>
+                {% else %}
+                <span>{{ item.toplam_fiyat|floatformat:2 }} ₺</span>
+                {% endif %}
+            </div>
+            {% if item.indirim_tutari > 0 %}
+            <div style="font-size: 9px; color: #666; margin-left: 10px;">
+                İndirim: -{{ item.indirim_tutari|floatformat:2 }} ₺
+            </div>
+            <div style="font-size: 10px; font-weight: bold; margin-left: 10px;">
+                Net: {{ item.toplam_fiyat|floatformat:2 }} ₺
+            </div>
+            {% endif %}
+            {% if item.urun.barkod %}
+            <div style="font-size: 9px; color: #666;">Barkod: {{ item.urun.barkod }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Totals Section -->
+    <div class="totals-section">
+        <div class="total-row">
+            <span>Ara Toplam:</span>
+            <span>{{ satis.ara_toplam|floatformat:2 }} ₺</span>
+        </div>
+        
+        {% if satis.indirim_tutari > 0 %}
+        <div class="total-row">
+            <span>İndirim:</span>
+            <span>-{{ satis.indirim_tutari|floatformat:2 }} ₺</span>
+        </div>
+        {% endif %}
+        
+        {% if satis.kdv_tutari > 0 %}
+        <div class="total-row">
+            <span>KDV (%{{ satis.kdv_orani|floatformat:0 }}):</span>
+            <span>{{ satis.kdv_tutari|floatformat:2 }} ₺</span>
+        </div>
+        {% endif %}
+        
+        <div class="total-row grand-total">
+            <span>GENEL TOPLAM:</span>
+            <span>{{ satis.genel_toplam|floatformat:2 }} ₺</span>
+        </div>
+    </div>
+
+    <!-- Payment Section -->
+    {% if satis.odeme_set.all %}
+    <div class="payment-section">
+        <div style="font-weight: bold; margin-bottom: 3px;">ÖDEME DETAYLARI:</div>
+        {% for odeme in satis.odeme_set.all %}
+        <div class="total-row">
+            <span>{{ odeme.get_odeme_tipi_display }}:</span>
+            <span>{{ odeme.tutar|floatformat:2 }} ₺</span>
+        </div>
+        {% if odeme.odeme_tipi == 'kart' and odeme.taksit_sayisi and odeme.taksit_sayisi > 1 %}
+        <div style="font-size: 9px; margin-left: 10px; color: #666;">
+            {{ odeme.taksit_sayisi }} taksit
+        </div>
+        {% elif odeme.odeme_tipi == 'kart' %}
+        <div style="font-size: 9px; margin-left: 10px; color: #666;">
+            Tek çekim
+        </div>
+        {% endif %}
+        {% if odeme.hediye_ceki_kodu %}
+        <div style="font-size: 9px; margin-left: 10px; color: #666;">
+            Kod: {{ odeme.hediye_ceki_kodu }}
+        </div>
+        {% endif %}
+        {% endfor %}
+        
+        {% if satis.para_ustu > 0 %}
+        <div class="total-row" style="border-top: 1px dotted #000; padding-top: 2px;">
+            <span>Para Üstü:</span>
+            <span>{{ satis.para_ustu|floatformat:2 }} ₺</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Barcode Section -->
+    {% if satis.siparis_no %}
+    <div class="barcode">
+        <div style="border: 1px solid #000; padding: 5px; font-family: 'Courier New', monospace;">
+            ||| {{ satis.siparis_no }} |||
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mali Değer Notice -->
+    <div class="mali-deger">
+        MALİ DEĞERİ YOKTUR
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>Satın aldığınız ürünleri kontrol ediniz.</div>
+        <div>İade koşulları için mağaza ile iletişime geçiniz.</div>
+        <div style="margin-top: 5px; font-size: 9px;">
+            Bu fiş NUVİA OTOMASYON tarafından oluşturulmuştur.
+        </div>
+        <div style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px;">
+            Bizi tercih ettiğiniz için teşekkür ederiz!
+        </div>
+    </div>
+
+    <script>
+        // Sayfa yüklendiğinde otomatik yazdır (isteğe bağlı)
+        // window.onload = function() { window.print(); }
+        
+        // Print butonuna tıklandığında
+        function printReceipt() {
+            window.print();
+        }
+        
+        // ESC tuşu ile kapat
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>

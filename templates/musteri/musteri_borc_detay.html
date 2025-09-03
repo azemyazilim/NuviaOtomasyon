@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ musteri.tam_ad }} - Borç Detay{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-user"></i> {{ musteri.tam_ad }} - Borç Detayları
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Müşteri Bilgileri -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Müşteri Bilgileri</h5>
+                            <p><strong>Ad Soyad:</strong> {{ musteri.tam_ad }}</p>
+                            <p><strong>Telefon:</strong> {{ musteri.telefon }}</p>
+                            {% if musteri.email %}
+                            <p><strong>E-posta:</strong> {{ musteri.email }}</p>
+                            {% endif %}
+                            {% if musteri.firma_adi %}
+                            <p><strong>Firma:</strong> {{ musteri.firma_adi }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Finansal Durum</h5>
+                            <p><strong>Mevcut Bakiye:</strong> 
+                                {% if musteri.acik_hesap_bakiye > 0 %}
+                                    <span class="badge bg-danger fs-6">{{ musteri.acik_hesap_bakiye|floatformat:2 }}₺ Borç</span>
+                                {% elif musteri.acik_hesap_bakiye < 0 %}
+                                    <span class="badge bg-success fs-6">{{ musteri.acik_hesap_bakiye|floatformat:2|slice:"1:" }}₺ Alacak</span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">0₺</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Açık Hesap Limiti:</strong> {{ musteri.acik_hesap_limit|floatformat:2 }}₺</p>
+                            <p><strong>Toplam Satış:</strong> {{ musteri.toplam_satis_tutari|floatformat:2 }}₺</p>
+                            <p><strong>Satış Sayısı:</strong> {{ musteri.satis_sayisi }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Ödenmemiş Satışlar -->
+                    {% if odenmemis_satislar %}
+                    <div class="mb-4">
+                        <h5>Ödenmemiş Satışlar</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Satış No</th>
+                                        <th>Tarih</th>
+                                        <th>Tutar</th>
+                                        <th>Ödeme Durumu</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for satis in odenmemis_satislar %}
+                                    <tr>
+                                        <td>{{ satis.satis_no }}</td>
+                                        <td>{{ satis.satis_tarihi|date:"d.m.Y" }}</td>
+                                        <td>{{ satis.toplam_tutar|floatformat:2 }}₺</td>
+                                        <td>
+                                            <span class="badge bg-warning">Veresiye</span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'musteri:tahsilat_formu_musteri' musteri.id %}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-money-bill"></i> Tahsil Et
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Son Hareketler -->
+                    <div class="mb-4">
+                        <h5>Son Borç-Alacak Hareketleri</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>Hareket</th>
+                                        <th>Tutar</th>
+                                        <th>Önceki Bakiye</th>
+                                        <th>Yeni Bakiye</th>
+                                        <th>Açıklama</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hareket in hareketler %}
+                                    <tr>
+                                        <td>{{ hareket.hareket_tarihi|date:"d.m.Y H:i" }}</td>
+                                        <td>
+                                            {% if hareket.hareket_tipi == 'borc' %}
+                                                <span class="badge bg-danger">Borç</span>
+                                            {% elif hareket.hareket_tipi == 'alacak' %}
+                                                <span class="badge bg-success">Alacak</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Düzeltme</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if hareket.hareket_tipi == 'borc' %}
+                                                +{{ hareket.tutar|floatformat:2 }}₺
+                                            {% else %}
+                                                -{{ hareket.tutar|floatformat:2 }}₺
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ hareket.onceki_bakiye|floatformat:2 }}₺</td>
+                                        <td>{{ hareket.yeni_bakiye|floatformat:2 }}₺</td>
+                                        <td>{{ hareket.aciklama }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Henüz hareket kaydı bulunmuyor.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Son Tahsilatlar -->
+                    {% if tahsilatlar %}
+                    <div class="mb-4">
+                        <h5>Son Tahsilatlar</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Tahsilat No</th>
+                                        <th>Tarih</th>
+                                        <th>Tutar</th>
+                                        <th>Tip</th>
+                                        <th>Durum</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tahsilat in tahsilatlar %}
+                                    <tr>
+                                        <td>{{ tahsilat.tahsilat_no }}</td>
+                                        <td>{{ tahsilat.tahsilat_tarihi|date:"d.m.Y" }}</td>
+                                        <td>{{ tahsilat.tutar|floatformat:2 }}₺</td>
+                                        <td>{{ tahsilat.get_tahsilat_tipi_display }}</td>
+                                        <td>
+                                            {% if tahsilat.durum == 'tahsil_edildi' %}
+                                                <span class="badge bg-success">Tahsil Edildi</span>
+                                            {% elif tahsilat.durum == 'beklemede' %}
+                                                <span class="badge bg-warning">Beklemede</span>
+                                            {% elif tahsilat.durum == 'iptal' %}
+                                                <span class="badge bg-danger">İptal</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'musteri:tahsilat_detay' tahsilat.id %}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Yan Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Hızlı İşlemler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if musteri.acik_hesap_bakiye > 0 %}
+                        <a href="{% url 'musteri:tahsilat_formu_musteri' musteri.id %}" class="btn btn-success">
+                            <i class="fas fa-money-bill"></i> Tahsilat Yap
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'musteri:borc_alacak_listesi' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Borç-Alacak Listesi
+                        </a>
+                        <a href="{% url 'musteri:tahsilat_listesi' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-receipt"></i> Tahsilat Listesi
+                        </a>
+                        <a href="{% url 'musteri:detay' musteri.id %}" class="btn btn-outline-info">
+                            <i class="fas fa-user"></i> Müşteri Profili
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">İstatistikler</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Kayıt Tarihi:</strong> {{ musteri.kayit_tarihi|date:"d.m.Y" }}</p>
+                    {% if musteri.son_satis_tarihi %}
+                    <p><strong>Son Satış:</strong> {{ musteri.son_satis_tarihi|date:"d.m.Y" }}</p>
+                    {% endif %}
+                    {% if musteri.son_tahsilat_tarihi %}
+                    <p><strong>Son Tahsilat:</strong> {{ musteri.son_tahsilat_tarihi|date:"d.m.Y" }}</p>
+                    {% endif %}
+                    <p><strong>Müşteri Tipi:</strong> {{ musteri.get_tip_display }}</p>
+                    <p><strong>Durum:</strong> 
+                        {% if musteri.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                        {% else %}
+                            <span class="badge bg-danger">Pasif</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

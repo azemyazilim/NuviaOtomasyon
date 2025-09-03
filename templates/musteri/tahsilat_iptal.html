@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tahsilat İptal - {{ tahsilat.tahsilat_no }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Tahsilat İptal
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Dikkat!</h5>
+                        <p>Bu tahsilat kaydını iptal etmek üzeresiniz. Bu işlem:</p>
+                        <ul>
+                            <li>Tahsilat kaydını iptal durumuna getirecek</li>
+                            <li>Müşterinin borç bakiyesini eski haline getirecek</li>
+                            <li>Geri alınamaz bir işlemdir</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Tahsilat Bilgileri</h5>
+                            <p><strong>Tahsilat No:</strong> {{ tahsilat.tahsilat_no }}</p>
+                            <p><strong>Tarih:</strong> {{ tahsilat.tahsilat_tarihi|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Tutar:</strong> <span class="text-danger fw-bold">{{ tahsilat.tutar|floatformat:2 }}₺</span></p>
+                            <p><strong>Tip:</strong> {{ tahsilat.get_tahsilat_tipi_display }}</p>
+                            <p><strong>Durum:</strong> 
+                                {% if tahsilat.durum == 'tahsil_edildi' %}
+                                    <span class="badge bg-success">{{ tahsilat.get_durum_display }}</span>
+                                {% elif tahsilat.durum == 'beklemede' %}
+                                    <span class="badge bg-warning">{{ tahsilat.get_durum_display }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Müşteri Bilgileri</h5>
+                            <p><strong>Müşteri:</strong> {{ tahsilat.musteri.tam_ad }}</p>
+                            <p><strong>Telefon:</strong> {{ tahsilat.musteri.telefon }}</p>
+                            <p><strong>Mevcut Borç:</strong> 
+                                {% if tahsilat.musteri.acik_hesap_bakiye > 0 %}
+                                    <span class="badge bg-danger">{{ tahsilat.musteri.acik_hesap_bakiye|floatformat:2 }}₺</span>
+                                {% elif tahsilat.musteri.acik_hesap_bakiye < 0 %}
+                                    <span class="badge bg-success">{{ tahsilat.musteri.acik_hesap_bakiye|floatformat:2|slice:"1:" }}₺ Alacak</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">0₺</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>İptal Sonrası Borç:</strong> 
+                                <span class="badge bg-warning">{{ tahsilat.musteri.acik_hesap_bakiye|add:tahsilat.tutar|floatformat:2 }}₺</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if tahsilat.aciklama %}
+                    <hr>
+                    <h5>Açıklama</h5>
+                    <p>{{ tahsilat.aciklama }}</p>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <form method="post" class="text-center">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'musteri:tahsilat_detay' tahsilat.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Geri Dön
+                            </a>
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Bu tahsilat kaydını iptal etmek istediğinizden emin misiniz?')">
+                                <i class="fas fa-times"></i> Tahsilat İptal Et
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

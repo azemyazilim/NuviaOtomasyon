@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% load currency_filters %}
+
+{% block title %}{{ urun.ad }} - Ürün Detayı{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-detail-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .product-image-section {
+        background: #f8f9fa;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .product-image-large {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .no-image-large {
+        font-size: 8rem;
+        color: #6c757d;
+        margin: 2rem 0;
+    }
+    
+    .product-info-section {
+        padding: 2rem;
+    }
+    
+    .product-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+    
+    .product-price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 1.5rem;
+    }
+    
+    .product-meta {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .meta-item:last-child {
+        border-bottom: none;
+    }
+    
+    .meta-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .meta-value {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .stock-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .stock-high {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .stock-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .stock-low {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .stock-out {
+        background: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-large {
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .product-title {
+            font-size: 1.5rem;
+        }
+        
+        .product-price {
+            font-size: 2rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-large {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Ürün Detayı</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'anasayfa' %}">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:liste' %}">Ürünler</a></li>
+                    <li class="breadcrumb-item active">{{ urun.ad }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'urun:liste' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Ürün Detayı -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="product-detail-container">
+                <div class="row">
+                    <!-- Ürün Görseli -->
+                    <div class="col-md-5">
+                        <div class="product-image-section">
+                            {% if urun.resim %}
+                                <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}" class="product-image-large">
+                            {% else %}
+                                <div class="no-image-large">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <p class="text-muted">Ürün görseli bulunmuyor</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Ürün Bilgileri -->
+                    <div class="col-md-7">
+                        <div class="product-info-section">
+                            <h1 class="product-title">{{ urun.ad }}</h1>
+                            <div class="product-price">{{ urun.satis_fiyati|turkish_currency }}</div>
+                            
+                            <!-- Ürün Meta Bilgileri -->
+                            <div class="product-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-tag me-2"></i>Kategori
+                                    </span>
+                                    <span class="meta-value">{{ urun.kategori.ad }}</span>
+                                </div>
+                                
+                                {% if urun.marka %}
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-copyright me-2"></i>Marka
+                                    </span>
+                                    <span class="meta-value">{{ urun.marka.ad }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if urun.barkod %}
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-barcode me-2"></i>Barkod
+                                    </span>
+                                    <span class="meta-value">{{ urun.barkod }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-venus-mars me-2"></i>Cinsiyet
+                                    </span>
+                                    <span class="meta-value">
+                                        {% if urun.cinsiyet == 'kadin' %}
+                                            <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                        {% elif urun.cinsiyet == 'erkek' %}
+                                            <i class="fas fa-mars me-1" style="color: #007bff;"></i>Erkek
+                                        {% else %}
+                                            <i class="fas fa-venus me-1" style="color: #e83e8c;"></i>Kadın
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-boxes me-2"></i>Stok Durumu
+                                    </span>
+                                    <span class="meta-value">
+                                        {% if urun.stok_miktari == 0 %}
+                                            <span class="stock-status stock-out">
+                                                <i class="fas fa-times-circle me-1"></i>Stok Tükendi
+                                            </span>
+                                        {% elif urun.stok_miktari <= 10 %}
+                                            <span class="stock-status stock-low">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Kritik: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% elif urun.stok_miktari <= 50 %}
+                                            <span class="stock-status stock-medium">
+                                                <i class="fas fa-minus-circle me-1"></i>Az: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% else %}
+                                            <span class="stock-status stock-high">
+                                                <i class="fas fa-check-circle me-1"></i>Yeterli: {{ urun.stok_miktari }} adet
+                                            </span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-money-bill me-2"></i>Alış Fiyatı
+                                    </span>
+                                    <span class="meta-value">{{ urun.alis_fiyati|turkish_currency }}</span>
+                                </div>
+                                
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-percent me-2"></i>Kar Marjı
+                                    </span>
+                                    <span class="meta-value">
+                                        {% widthratio urun.satis_fiyati urun.alis_fiyati 100|floatformat:1 %}%
+                                    </span>
+                                </div>
+                                
+                                <div class="meta-item">
+                                    <span class="meta-label">
+                                        <i class="fas fa-calendar me-2"></i>Eklenme Tarihi
+                                    </span>
+                                    <span class="meta-value">{{ urun.olusturma_tarihi|date:"d.m.Y H:i" }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Açıklama -->
+                            {% if urun.aciklama %}
+                            <div class="mb-3">
+                                <h5><i class="fas fa-info-circle me-2"></i>Ürün Açıklaması</h5>
+                                <p class="text-muted">{{ urun.aciklama }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Aksiyon Butonları -->
+                            <div class="action-buttons">
+                                <a href="{% url 'urun:duzenle' urun.pk %}" class="btn btn-warning btn-large">
+                                    <i class="fas fa-edit me-2"></i>Düzenle
+                                </a>
+                                <a href="{% url 'satis:satis_ekrani' %}?urun_id={{ urun.pk }}" class="btn btn-success btn-large">
+                                    <i class="fas fa-shopping-cart me-2"></i>Satış Yap
+                                </a>
+                                <a href="{% url 'urun:sil' urun.pk %}" class="btn btn-danger btn-large" 
+                                   onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')">
+                                    <i class="fas fa-trash me-2"></i>Sil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

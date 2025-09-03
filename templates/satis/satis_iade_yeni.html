@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Satış İade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .iade-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .satir-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .urun-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: white;
+        transition: box-shadow 0.2s;
+    }
+    
+    .urun-card:hover {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .urun-card.selected {
+        border-color: #28a745;
+        box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+    }
+    
+    .iade-miktar-input {
+        width: 100px;
+        text-align: center;
+    }
+    
+    .ozet-panel {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #2196f3;
+    }
+    
+    .btn-iade {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 8px;
+        color: white;
+        transition: all 0.3s;
+    }
+    
+    .btn-iade:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        color: white;
+    }
+    
+    .btn-iade:disabled {
+        background: #6c757d;
+        transform: none;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    
+    .alert-warning {
+        border-left: 4px solid #ffc107;
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="iade-container">
+        <!-- Başlık -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-primary">
+                <i class="fas fa-undo me-2"></i>
+                Satış İade İşlemi
+            </h2>
+            <a href="{% url 'satis:liste' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Geri Dön
+            </a>
+        </div>
+
+        <!-- Satış Bilgileri -->
+        <div class="satir-info">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3">Satış Bilgileri</h5>
+                    <p><strong>Satış No:</strong> {{ satis.satis_no|default:satis.siparis_no }}</p>
+                    <p><strong>Tarih:</strong> {{ satis.siparis_tarihi|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Müşteri:</strong> 
+                        {% if satis.musteri %}
+                            {{ satis.musteri.ad }} {{ satis.musteri.soyad }}
+                        {% else %}
+                            Bireysel Satış
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-success mb-3">Tutar Bilgileri</h5>
+                    <p><strong>Toplam Satış:</strong> <span class="text-success">{{ satis.toplam_tutar|floatformat:2 }} ₺</span></p>
+                    <p><strong>İade Tutarı:</strong> <span class="text-danger fw-bold" id="toplam-iade">0,00 ₺</span></p>
+                    <p><strong>Kalan Tutar:</strong> <span class="text-info" id="kalan-tutar">{{ satis.toplam_tutar|floatformat:2 }} ₺</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Uyarı -->
+        <div class="alert alert-warning" role="alert">
+            <h6><i class="fas fa-exclamation-triangle me-2"></i>Önemli Bilgi</h6>
+            <p class="mb-0">İade tutarı kadar <strong>hediye çeki</strong> otomatik oluşturulacaktır. Hediye çeki 1 yıl geçerlidir ve sadece mağazamızda kullanılabilir.</p>
+        </div>
+
+        <!-- İade Formu -->
+        <form method="post" id="iade-formu">
+            {% csrf_token %}
+            
+            <h5 class="mb-3">İade Edilecek Ürünler</h5>
+            
+            {% for kalem in kalemler %}
+            <div class="urun-card" data-kalem-id="{{ kalem.id }}">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="form-check me-3">
+                                <input class="form-check-input urun-checkbox" 
+                                       type="checkbox" 
+                                       id="urun_{{ kalem.id }}"
+                                       data-kalem-id="{{ kalem.id }}">
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ kalem.urun.ad }}</h6>
+                                {% if kalem.urun.barkod %}
+                                    <small class="text-muted">Barkod: {{ kalem.urun.barkod }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2 text-center">
+                        <span class="badge bg-primary fs-6">{{ kalem.miktar }} adet</span>
+                        <small class="d-block text-muted">Satılan</small>
+                    </div>
+                    
+                    <div class="col-md-2 text-center">
+                        <input type="number" 
+                               class="form-control iade-miktar-input" 
+                               id="iade_miktar_{{ kalem.id }}"
+                               name="iade_miktar_{{ kalem.id }}"
+                               min="0" 
+                               max="{{ kalem.miktar }}" 
+                               value="0"
+                               data-kalem-id="{{ kalem.id }}"
+                               data-birim-fiyat="{{ kalem.birim_fiyat }}"
+                               disabled>
+                        <small class="text-muted">İade Miktarı</small>
+                    </div>
+                    
+                    <div class="col-md-2 text-end">
+                        <div class="fs-6 fw-bold">{{ kalem.birim_fiyat|floatformat:2 }} ₺</div>
+                        <small class="text-muted">Birim Fiyat</small>
+                        <div class="text-danger fw-bold iade-tutar" id="iade_tutar_{{ kalem.id }}">0,00 ₺</div>
+                        <small class="text-muted">İade Tutarı</small>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Bu satışta iade edilebilecek ürün bulunmuyor.
+            </div>
+            {% endfor %}
+
+            <!-- Hızlı İşlemler -->
+            <div class="mb-4">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="tumunuSec()">
+                        <i class="fas fa-check-square me-2"></i>Tümünü Seç
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="temizle()">
+                        <i class="fas fa-times me-2"></i>Temizle
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="tamIade()">
+                        <i class="fas fa-undo me-2"></i>Tam İade
+                    </button>
+                </div>
+            </div>
+
+            <!-- Özet Panel -->
+            <div class="ozet-panel" id="ozet-panel" style="display: none;">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-clipboard-list me-2"></i>İade Özeti</h6>
+                        <div id="ozet-icerik"></div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button type="submit" class="btn btn-iade" id="iade-btn" disabled>
+                            <i class="fas fa-gift me-2"></i>
+                            İade Et ve Hediye Çeki Oluştur
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Global değişkenler
+let toplamIadeTutari = 0;
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 İade sayfası yüklendi');
+    
+    // Event listener'ları ekle
+    document.querySelectorAll('.urun-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', urunSecimDegisti);
+    });
+    
+    document.querySelectorAll('input[name^="iade_miktar_"]').forEach(input => {
+        input.addEventListener('input', hesaplaToplamIade);
+    });
+    
+    // Form submit
+    document.getElementById('iade-formu').addEventListener('submit', function(e) {
+        const secilenUrunSayisi = document.querySelectorAll('.urun-checkbox:checked').length;
+        
+        if (secilenUrunSayisi === 0) {
+            e.preventDefault();
+            alert('En az bir ürün seçmelisiniz!');
+            return;
+        }
+        
+        if (toplamIadeTutari <= 0) {
+            e.preventDefault();
+            alert('İade tutarı 0\'dan büyük olmalıdır!');
+            return;
+        }
+        
+        const onay = confirm(
+            `${secilenUrunSayisi} ürün için toplam ${formatTurkishCurrency(toplamIadeTutari)} tutarında iade yapılacak.\n\n` +
+            `✓ Ürünler stoka geri eklenecek\n` +
+            `✓ ${formatTurkishCurrency(toplamIadeTutari)} hediye çeki oluşturulacak\n\n` +
+            `Onaylıyor musunuz?`
+        );
+        
+        if (!onay) {
+            e.preventDefault();
+        }
+    });
+});
+
+// Ürün seçimi değiştiği zaman
+function urunSecimDegisti(event) {
+    const checkbox = event.target;
+    const kalemId = checkbox.dataset.kalemId;
+    const urunCard = document.querySelector(`[data-kalem-id="${kalemId}"]`);
+    const miktarInput = document.getElementById(`iade_miktar_${kalemId}`);
+    const maxMiktar = parseInt(miktarInput.getAttribute('max'));
+    
+    if (checkbox.checked) {
+        // Ürün seçildi
+        urunCard.classList.add('selected');
+        miktarInput.disabled = false;
+        miktarInput.value = maxMiktar; // Varsayılan olarak maksimum miktar
+        miktarInput.focus();
+    } else {
+        // Ürün seçimi kaldırıldı
+        urunCard.classList.remove('selected');
+        miktarInput.disabled = true;
+        miktarInput.value = 0;
+    }
+    
+    hesaplaToplamIade();
+}
+
+// Toplam iade tutarını hesapla
+function hesaplaToplamIade() {
+    toplamIadeTutari = 0;
+    let secilenUrunSayisi = 0;
+    const ozetIcerik = [];
+    
+    document.querySelectorAll('.urun-checkbox:checked').forEach(checkbox => {
+        const kalemId = checkbox.dataset.kalemId;
+        const miktarInput = document.getElementById(`iade_miktar_${kalemId}`);
+        const iadeTutarElement = document.getElementById(`iade_tutar_${kalemId}`);
+        
+        const miktar = parseInt(miktarInput.value) || 0;
+        const birimFiyat = parseFloat(miktarInput.dataset.birimFiyat) || 0;
+        const iadeTutar = miktar * birimFiyat;
+        
+        // Ürün iade tutarını güncelle
+        iadeTutarElement.textContent = formatTurkishCurrency(iadeTutar);
+        
+        if (miktar > 0) {
+            toplamIadeTutari += iadeTutar;
+            secilenUrunSayisi++;
+            
+            // Özet için ürün bilgisi ekle
+            const urunAdi = checkbox.closest('.urun-card').querySelector('h6').textContent;
+            ozetIcerik.push(`• ${urunAdi}: ${miktar} adet - ${formatTurkishCurrency(iadeTutar)}`);
+        }
+    });
+    
+    // Toplam tutarları güncelle
+    document.getElementById('toplam-iade').textContent = formatTurkishCurrency(toplamIadeTutari);
+    
+    const satisToplamText = document.getElementById('kalan-tutar').textContent.replace(' ₺', '').replace(',', '.');
+    const satisToplam = parseFloat(satisToplamText) || 0;
+    const kalanTutar = satisToplam - toplamIadeTutari;
+    document.getElementById('kalan-tutar').textContent = formatTurkishCurrency(kalanTutar);
+    
+    // Özet paneli
+    const ozetPanel = document.getElementById('ozet-panel');
+    const ozetIcerikDiv = document.getElementById('ozet-icerik');
+    const iadeBtn = document.getElementById('iade-btn');
+    
+    if (secilenUrunSayisi > 0 && toplamIadeTutari > 0) {
+        ozetIcerikDiv.innerHTML = `
+            <p class="mb-2"><strong>İade edilecek ürünler:</strong></p>
+            <div class="small">${ozetIcerik.join('<br>')}</div>
+            <hr class="my-2">
+            <p class="mb-0 fw-bold">Toplam: ${formatTurkishCurrency(toplamIadeTutari)}</p>
+        `;
+        ozetPanel.style.display = 'block';
+        iadeBtn.disabled = false;
+    } else {
+        ozetPanel.style.display = 'none';
+        iadeBtn.disabled = true;
+    }
+}
+
+// Para formatı
+function formatTurkishCurrency(amount) {
+    return new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount) + ' ₺';
+}
+
+// Hızlı işlemler
+function tumunuSec() {
+    document.querySelectorAll('.urun-checkbox').forEach(checkbox => {
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            urunSecimDegisti({ target: checkbox });
+        }
+    });
+}
+
+function temizle() {
+    document.querySelectorAll('.urun-checkbox').forEach(checkbox => {
+        if (checkbox.checked) {
+            checkbox.checked = false;
+            urunSecimDegisti({ target: checkbox });
+        }
+    });
+}
+
+function tamIade() {
+    tumunuSec();
+}
+</script>
+{% endblock %}

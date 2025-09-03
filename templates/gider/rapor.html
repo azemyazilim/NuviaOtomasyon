@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gider Raporları{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>Gider Raporları
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Özet Kartlar -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-calendar-day fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-0">₺{{ bugün_giderleri|floatformat:2 }}</h4>
+                                        <p class="mb-0">Bugünkü Giderler</p>
+                                        <small class="opacity-75">{{ bugün }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-calendar-alt fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-0">₺{{ bu_ay_giderleri|floatformat:2 }}</h4>
+                                        <p class="mb-0">Bu Ay Toplam</p>
+                                        <small class="opacity-75">{{ bu_ay_başı|date:"F Y" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategori İstatistikleri -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tags me-2"></i>Kategori Bazında Giderler (Bu Ay)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% for kategori in kategori_istatistikleri %}
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-box me-3" style="background-color: {{ kategori.renk }}20; color: {{ kategori.renk }};">
+                                        <i class="{{ kategori.ikon }}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-medium">{{ kategori.ad }}</span>
+                                            <span class="badge bg-secondary">{{ kategori.gider_adedi }} işlem</span>
+                                        </div>
+                                        <div class="progress mt-1" style="height: 6px;">
+                                            {% if kategori.bu_ay_toplam %}
+                                            <div class="progress-bar" style="width: 75%; background-color: {{ kategori.renk }};"></div>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">₺{{ kategori.bu_ay_toplam|default:0|floatformat:2 }}</small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-tags fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted">Bu ay hiç gider kaydı yok</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-credit-card me-2"></i>Ödeme Yöntemleri
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% for odeme in ödeme_dağılımı %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>
+                                        {% if odeme.odeme_yontemi == 'nakit' %}
+                                            <i class="fas fa-money-bill-wave text-success me-1"></i>Nakit
+                                        {% elif odeme.odeme_yontemi == 'kart' %}
+                                            <i class="fas fa-credit-card text-primary me-1"></i>Kart
+                                        {% elif odeme.odeme_yontemi == 'havale' %}
+                                            <i class="fas fa-university text-info me-1"></i>Havale
+                                        {% else %}
+                                            <i class="fas fa-question-circle text-muted me-1"></i>{{ odeme.odeme_yontemi|title }}
+                                        {% endif %}
+                                    </span>
+                                    <div class="text-end">
+                                        <div class="fw-bold">₺{{ odeme.toplam|floatformat:2 }}</div>
+                                        <small class="text-muted">{{ odeme.adet }} işlem</small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-credit-card fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Bu ay ödeme yok</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Basit İstatistik Tablosu -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>Son 30 Gün Özet
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tarih</th>
+                                                <th class="text-end">Tutar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for gun in günlük_trend %}
+                                            <tr>
+                                                <td>{{ gun.tarih|date:"d F Y" }}</td>
+                                                <td class="text-end">₺{{ gun.toplam|default:0|floatformat:2 }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="2" class="text-center text-muted">Son 30 günde gider kaydı yok</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-box {
+    width: 35px;
+    height: 35px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}

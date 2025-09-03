@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Stok Takip{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Dashboard</h1>
+            
+            {% if error %}
+                <div class="alert alert-danger">
+                    <strong>Hata:</strong> {{ error }}
+                </div>
+            {% endif %}
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Toplam Ürün</h6>
+                                    <h3 class="mb-0">{{ toplam_urun }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-boxes fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Toplam Müşteri</h6>
+                                    <h3 class="mb-0">{{ toplam_musteri }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Bugünkü Satış</h6>
+                                    <h3 class="mb-0">{{ bugunki_satis|floatformat:2 }} ₺</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Bugünkü Gider</h6>
+                                    <h3 class="mb-0">{{ bugunki_gider_toplam|floatformat:2 }} ₺</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Hoş Geldiniz!</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Sistem başarıyla çalışıyor. Tarih: {{ bugun|date:"d F Y" }}</p>
+                            <p>Kullanıcı yönetim sistemi aktif ve tüm modüller hazır.</p>
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'kullanici:user_list' %}" class="btn btn-primary">
+                                    <i class="fas fa-users me-1"></i> Kullanıcılar
+                                </a>
+                                <a href="{% url 'urun:liste' %}" class="btn btn-info">
+                                    <i class="fas fa-boxes me-1"></i> Ürünler
+                                </a>
+                                <a href="{% url 'satis:liste' %}" class="btn btn-success">
+                                    <i class="fas fa-shopping-cart me-1"></i> Satışlar
+                                </a>
+                                <a href="{% url 'musteri:liste' %}" class="btn btn-warning">
+                                    <i class="fas fa-address-book me-1"></i> Müşteriler
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

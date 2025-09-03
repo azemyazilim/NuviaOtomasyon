@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}İade Fişi - {{ hediye_ceki.kod }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .iade-fisi {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .fis-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .hediye-ceki-kod {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        margin: 10px 0;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        border: 2px dashed rgba(255, 255, 255, 0.8);
+    }
+    
+    .fis-body {
+        padding: 30px;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #555;
+    }
+    
+    .info-value {
+        color: #333;
+    }
+    
+    .tutar-highlight {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .kullanim-kurallari {
+        background: #f8f9fa;
+        border-left: 4px solid #28a745;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .qr-placeholder {
+        width: 100px;
+        height: 100px;
+        background: #f0f0f0;
+        border: 2px dashed #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px auto;
+        border-radius: 8px;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .iade-fisi {
+            box-shadow: none;
+            border: 1px solid #000;
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+        }
+    }
+    
+    .action-buttons {
+        margin-top: 30px;
+        text-align: center;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="iade-fisi">
+        <!-- Fiş Header -->
+        <div class="fis-header">
+            <h1 class="mb-0">İADE FİŞİ</h1>
+            <p class="mb-2">Hediye Çeki</p>
+            <div class="hediye-ceki-kod">
+                {{ hediye_ceki.kod }}
+            </div>
+            <p class="mb-0">
+                <i class="fas fa-gift me-2"></i>
+                Bu fiş {{ hediye_ceki.tutar|floatformat:2 }} ₺ değerindedir
+            </p>
+        </div>
+        
+        <!-- Fiş Body -->
+        <div class="fis-body">
+            <!-- Hediye Çeki Bilgileri -->
+            <h5 class="text-primary mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Hediye Çeki Bilgileri
+            </h5>
+            
+            <div class="info-row">
+                <span class="info-label">Kod:</span>
+                <span class="info-value">{{ hediye_ceki.kod }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Tutar:</span>
+                <span class="info-value tutar-highlight">{{ hediye_ceki.tutar|floatformat:2 }} ₺</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Kalan Tutar:</span>
+                <span class="info-value">{{ hediye_ceki.kalan_tutar|floatformat:2 }} ₺</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Oluşturma Tarihi:</span>
+                <span class="info-value">{{ hediye_ceki.olusturma_tarihi|date:"d.m.Y H:i" }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Geçerlilik Tarihi:</span>
+                <span class="info-value">{{ hediye_ceki.gecerlilik_tarihi|date:"d.m.Y" }}</span>
+            </div>
+            
+            {% if hediye_ceki.musteri %}
+            <div class="info-row">
+                <span class="info-label">Müşteri:</span>
+                <span class="info-value">{{ hediye_ceki.musteri.ad }} {{ hediye_ceki.musteri.soyad }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="info-row">
+                <span class="info-label">Durum:</span>
+                <span class="info-value">
+                    <span class="badge bg-success">{{ hediye_ceki.get_durum_display }}</span>
+                </span>
+            </div>
+            
+            <!-- İade Sebebi -->
+            {% if hediye_ceki.aciklama %}
+            <div style="margin-top: 20px;">
+                <h6 class="text-secondary">İade Sebebi:</h6>
+                <p class="text-muted">{{ hediye_ceki.aciklama }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- QR Kod Alanı (Gelecekte eklenebilir) -->
+            <div class="qr-placeholder">
+                <i class="fas fa-qrcode fa-2x text-muted"></i>
+            </div>
+            
+            <!-- Kullanım Kuralları -->
+            <div class="kullanim-kurallari">
+                <h6 class="text-success mb-2">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Kullanım Kuralları
+                </h6>
+                <ul class="mb-0 small">
+                    <li>Bu hediye çeki tek seferlik kullanılabilir</li>
+                    <li>Sadece mağazamızda geçerlidir</li>
+                    <li>Para üstü verilmez</li>
+                    <li>Geçerlilik tarihi: <strong>{{ hediye_ceki.gecerlilik_tarihi|date:"d.m.Y" }}</strong></li>
+                    <li>Satış sırasında bu kodu kasiyere gösteriniz</li>
+                    <li>Bu fiş kaybolduğunda yenisi verilmez</li>
+                </ul>
+            </div>
+            
+            <!-- İletişim Bilgileri -->
+            <div class="text-center mt-4">
+                <p class="small text-muted mb-1">
+                    <i class="fas fa-store me-1"></i>
+                    Nuvia Otomasyon Mağazası
+                </p>
+                <p class="small text-muted mb-0">
+                    Daha fazla bilgi için mağaza ile iletişime geçiniz
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons no-print">
+        <div class="d-flex justify-content-center flex-wrap gap-2">
+            <a href="{% url 'satis:liste' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Satış Listesi
+            </a>
+            
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print me-2"></i>
+                Yazdır
+            </button>
+            
+            <a href="{% url 'satis:iade_fisi_pdf' hediye_ceki.pk %}" class="btn btn-success" target="_blank">
+                <i class="fas fa-file-pdf me-2"></i>
+                PDF İndir
+            </a>
+            
+            <button onclick="copyToClipboard('{{ hediye_ceki.kod }}')" class="btn btn-warning">
+                <i class="fas fa-copy me-2"></i>
+                Kodu Kopyala
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Hediye çeki kodunu kopyalama
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Bootstrap toast göster
+        showAlert('success', `Hediye çeki kodu kopyalandı: ${text}`);
+    }).catch(function() {
+        // Fallback method
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showAlert('success', `Hediye çeki kodu kopyalandı: ${text}`);
+    });
+}
+
+// Alert gösterme fonksiyonu
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // 3 saniye sonra otomatik kapat
+    setTimeout(() => {
+        if (alertDiv && alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// Print için sayfa ayarları
+window.addEventListener('beforeprint', function() {
+    document.title = `İade Fişi - ${document.querySelector('.hediye-ceki-kod').textContent.trim()}`;
+});
+</script>
+{% endblock %}

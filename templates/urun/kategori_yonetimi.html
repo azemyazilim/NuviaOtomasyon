@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load currency_filters %}
+
+{% block title %}Kategori Yönetimi - Stok Takip Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-section {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .category-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    
+    .category-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+    
+    .category-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-bottom: none;
+    }
+    
+    .category-body {
+        padding: 1.5rem;
+    }
+    
+    .category-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .category-item {
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    .category-item:hover {
+        background: #e9ecef;
+        border-left-color: #28a745;
+    }
+    
+    .category-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .category-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .category-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #495057;
+    }
+    
+    .btn-category {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    
+    .modal-content {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #e9ecef;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 15px 15px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-1">
+                <i class="fas fa-tags me-2"></i>Kategori Yönetimi
+            </h2>
+            <p class="text-muted mb-0">Ürün kategorilerini organize edin ve yönetin</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ustKategoriModal">
+                <i class="fas fa-plus me-2"></i>Kategori Ekle
+            </button>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ ust_kategoriler.count }}</h4>
+                            <p class="mb-0">Kategori Sayısı</p>
+                        </div>
+                        <i class="fas fa-folder-open fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{% for kategori in ust_kategoriler %}{{ kategori.urun_set.count }}{% if not forloop.last %} + {% endif %}{% endfor %}</h4>
+                            <p class="mb-0">Toplam Ürün</p>
+                        </div>
+                        <i class="fas fa-box fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Kategoriler -->
+        <div class="col-12">
+            <div class="category-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-primary mb-0">
+                        <i class="fas fa-folder-open me-2"></i>Kategoriler
+                    </h4>
+                    <span class="badge bg-primary rounded-pill">{{ ust_kategoriler.count }}</span>
+                </div>
+                
+                <div class="category-list">
+                    {% if ust_kategoriler %}
+                        {% for kategori in ust_kategoriler %}
+                            <div class="category-item">
+                                <div class="category-name">{{ kategori.ad }}</div>
+                                {% if kategori.aciklama %}
+                                    <div class="category-description">{{ kategori.aciklama }}</div>
+                                {% endif %}
+                                <div class="category-stats">
+                                    <div class="stat-item">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>{{ kategori.olusturma_tarihi|date:"d.m.Y" }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <i class="fas fa-box"></i>
+                                        <span>{{ kategori.urun_set.count }} ürün</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <button class="btn btn-outline-warning btn-sm me-1" onclick="editUstKategori({{ kategori.id }}, '{{ kategori.ad }}', '{{ kategori.aciklama }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteKategori('ust', {{ kategori.id }}, '{{ kategori.ad }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <h5>Henüz kategori bulunmuyor</h5>
+                            <p>İlk kategoriyi oluşturmak için yukarıdaki butonu kullanın.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Üst Kategori Ekleme/Düzenleme Modal -->
+<div class="modal fade" id="ustKategoriModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ustKategoriModalTitle">
+                    <i class="fas fa-folder-open me-2"></i>Kategori Ekle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'urun:ust_kategori_ekle' %}" id="ustKategoriForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="ust_kategori_ad" name="ad" placeholder="Kategori Adı" required>
+                        <label for="ust_kategori_ad">Kategori Adı</label>
+                    </div>
+                    <div class="form-floating">
+                        <textarea class="form-control" id="ust_kategori_aciklama" name="aciklama" placeholder="Açıklama" style="height: 100px"></textarea>
+                        <label for="ust_kategori_aciklama">Açıklama (İsteğe bağlı)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Silme Onay Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Kategori Sil
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bu kategoriyi silmek istediğinizden emin misiniz?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong id="deleteKategoriName"></strong> kategorisi silinecek.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash me-2"></i>Sil
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editingKategoriId = null;
+let deleteKategoriId = null;
+
+// Üst kategori düzenleme
+function editUstKategori(id, ad, aciklama) {
+    editingKategoriId = id;
+    
+    document.getElementById('ustKategoriModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Kategori Düzenle';
+    document.getElementById('ust_kategori_ad').value = ad;
+    document.getElementById('ust_kategori_aciklama').value = aciklama || '';
+    
+    // Form action'ını güncelle
+    const form = document.getElementById('ustKategoriForm');
+    form.action = `{% url 'urun:ust_kategori_ekle' %}?edit=${id}`;
+    
+    new bootstrap.Modal(document.getElementById('ustKategoriModal')).show();
+}
+
+// Kategori silme
+function deleteKategori(type, id, name) {
+    deleteKategoriId = id;
+    
+    document.getElementById('deleteKategoriName').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Silme onayı
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    if (deleteKategoriId) {
+        const url = `/urun/kategori/ust-sil/${deleteKategoriId}/`;
+        
+        // Form oluştur ve gönder
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+
+// Modal temizleme
+document.getElementById('ustKategoriModal').addEventListener('hidden.bs.modal', function () {
+    editingKategoriId = null;
+    
+    document.getElementById('ustKategoriModalTitle').innerHTML = '<i class="fas fa-folder-open me-2"></i>Kategori Ekle';
+    document.getElementById('ustKategoriForm').action = '{% url "urun:ust_kategori_ekle" %}';
+    document.getElementById('ustKategoriForm').reset();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .gider-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #007bff;
+    }
+    
+    .gider-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .kategori-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .tutar-badge {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .odeme-badge {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-money-bill-wave text-primary me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">Giderlerinizi yönetin ve takip edin</p>
+        </div>
+        <div>
+            <a href="{% url 'gider:ekle' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Yeni Gider Ekle
+            </a>
+            <a href="{% url 'gider:rapor' %}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar me-1"></i>Raporlar
+            </a>
+        </div>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-calculator fa-2x mb-2"></i>
+                    <h4>{{ toplam_tutar|floatformat:2 }} ₺</h4>
+                    <small>Toplam Tutar</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-list fa-2x mb-2"></i>
+                    <h4>{{ gider_sayisi }}</h4>
+                    <small>Toplam Gider</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                    <h4>{{ bugun_toplam|floatformat:2 }} ₺</h4>
+                    <small>Bugün</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-hashtag fa-2x mb-2"></i>
+                    <h4>{{ bugun_sayisi }}</h4>
+                    <small>Bugünkü Gider Sayısı</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreleme -->
+    <div class="filter-section">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-search me-1"></i>Başlık Ara
+                </label>
+                {{ form.baslik }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="fas fa-tags me-1"></i>Kategori
+                </label>
+                {{ form.kategori }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="fas fa-calendar me-1"></i>Başlangıç
+                </label>
+                {{ form.baslangic_tarihi }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="fas fa-calendar me-1"></i>Bitiş
+                </label>
+                {{ form.bitis_tarihi }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="fas fa-credit-card me-1"></i>Ödeme
+                </label>
+                {{ form.odeme_yontemi }}
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Giderler Listesi -->
+    {% if page_obj %}
+        <div class="row">
+            {% for gider in page_obj %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card gider-card h-100" style="border-left-color: {{ gider.kategori_renk }};">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-1">{{ gider.baslik }}</h5>
+                                    <span class="kategori-badge" style="background-color: {{ gider.kategori_renk }}; color: white;">
+                                        <i class="{{ gider.kategori_ikon }} me-1"></i>{{ gider.kategori.ad }}
+                                    </span>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{% url 'gider:detay' gider.pk %}">
+                                            <i class="fas fa-eye me-1"></i>Detay
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'gider:duzenle' gider.pk %}">
+                                            <i class="fas fa-edit me-1"></i>Düzenle
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'gider:sil' gider.pk %}">
+                                            <i class="fas fa-trash me-1"></i>Sil
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-success tutar-badge">{{ gider.tutar|floatformat:2 }} ₺</span>
+                                <span class="badge bg-secondary odeme-badge ms-1">{{ gider.get_odeme_yontemi_display }}</span>
+                            </div>
+                            
+                            {% if gider.aciklama %}
+                                <p class="card-text text-muted small">{{ gider.aciklama|truncatewords:15 }}</p>
+                            {% endif %}
+                            
+                            {% if gider.tedarikci %}
+                                <p class="small mb-1">
+                                    <i class="fas fa-building me-1"></i>{{ gider.tedarikci }}
+                                </p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ gider.tarih|date:"d M Y" }}
+                                </small>
+                                {% if gider.tekrarlayan %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-repeat me-1"></i>Tekrarlayan
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Sayfalama -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Gider sayfalama">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.baslik %}&baslik={{ request.GET.baslik }}{% endif %}{% if request.GET.kategori %}&kategori={{ request.GET.kategori }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.baslik %}&baslik={{ request.GET.baslik }}{% endif %}{% if request.GET.kategori %}&kategori={{ request.GET.kategori }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.baslik %}&baslik={{ request.GET.baslik }}{% endif %}{% if request.GET.kategori %}&kategori={{ request.GET.kategori }}{% endif %}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Henüz gider kaydı bulunmuyor</h4>
+            <p class="text-muted">İlk giderinizi eklemek için aşağıdaki butona tıklayın.</p>
+            <a href="{% url 'gider:ekle' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>İlk Gideri Ekle
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tarih alanları için bugün ve bir ay öncesi gibi hızlı seçenekler
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        // URL parametrelerinde tarih yoksa, varsayılan değerleri set et
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('baslangic_tarihi') && !urlParams.get('bitis_tarihi')) {
+            const baslangicInput = document.querySelector('input[name="baslangic_tarihi"]');
+            const bitisInput = document.querySelector('input[name="bitis_tarihi"]');
+            
+            if (baslangicInput && !baslangicInput.value) {
+                baslangicInput.value = oneMonthAgo;
+            }
+            if (bitisInput && !bitisInput.value) {
+                bitisInput.value = today;
+            }
+        }
+    });
+</script>
+{% endblock %}

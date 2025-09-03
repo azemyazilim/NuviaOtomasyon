@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-chart-line"></i> {{ title }}</h4>
+                    
+                    <!-- Tarih Filtresi -->
+                    <div class="btn-group">
+                        <a href="?tarih=7" class="btn btn-sm {% if tarih_filtre == '7' %}btn-light{% else %}btn-outline-light{% endif %}">
+                            Son 7 Gün
+                        </a>
+                        <a href="?tarih=30" class="btn btn-sm {% if tarih_filtre == '30' %}btn-light{% else %}btn-outline-light{% endif %}">
+                            Son 30 Gün
+                        </a>
+                        <a href="?tarih=90" class="btn btn-sm {% if tarih_filtre == '90' %}btn-light{% else %}btn-outline-light{% endif %}">
+                            Son 90 Gün
+                        </a>
+                        <a href="?tarih=tumu" class="btn btn-sm {% if tarih_filtre == 'tumu' %}btn-light{% else %}btn-outline-light{% endif %}">
+                            Tüm Zamanlar
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    {% if en_cok_satanlar %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="5%">Sıra</th>
+                                        <th width="15%">Barkod</th>
+                                        <th width="25%">Ürün Adı</th>
+                                        <th width="15%">Kategori</th>
+                                        <th width="10%">Marka</th>
+                                        <th width="10%" class="text-center">Satılan Adet</th>
+                                        <th width="10%" class="text-end">Satış Tutarı</th>
+                                        <th width="10%" class="text-center">Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for urun in en_cok_satanlar %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">{{ forloop.counter }}</span>
+                                        </td>
+                                        <td>
+                                            <code>{{ urun.urun__barkod }}</code>
+                                        </td>
+                                        <td>
+                                            <strong>{{ urun.urun__ad }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ urun.urun__kategori__ad|default:"Kategori Yok" }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ urun.urun__marka__ad|default:"Marka Yok" }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success fs-6">{{ urun.toplam_adet }} adet</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success">{{ urun.toplam_tutar|floatformat:2 }} ₺</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if urun.urun__stok_miktari > 0 %}
+                                                <span class="badge bg-success">{{ urun.urun__stok_miktari }}</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Stokta Yok</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Özet Bilgiler -->
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-list"></i> Toplam Ürün Çeşidi</h5>
+                                        <h3>{{ en_cok_satanlar|length }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-boxes"></i> Toplam Satılan Adet</h5>
+                                        <h3>{{ toplam_satis_adedi|floatformat:0 }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-money-bill-wave"></i> Toplam Satış Tutarı</h5>
+                                        <h3>{{ toplam_satis_tutari|floatformat:2 }} ₺</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center py-5">
+                            <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <h4>{{ tarih_baslik }} için satış verisi bulunamadı</h4>
+                            <p class="mb-0">Seçilen tarih aralığında hiç satış yapılmamış veya kayıt bulunmuyor.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tabloyu DataTables ile geliştirelim (isteğe bağlı)
+    // $('#dataTable').DataTable();
+});
+</script>
+{% endblock %}

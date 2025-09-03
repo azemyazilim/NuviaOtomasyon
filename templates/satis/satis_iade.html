@@ -1,0 +1,828 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Satış İade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .iade-card {
+        max-width: 600px;
+        margin: 0 auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .warning-box {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border-left: 4px solid #856404;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .satis-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .amount-highlight {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #dc3545;
+    }
+    
+    .urun-satiri {
+        transition: background-color 0.2s ease;
+    }
+    
+    .urun-satiri:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .iade-miktar {
+        max-width: 80px;
+        text-align: center;
+    }
+    
+    .iade-tutar {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    #iade-ozeti {
+        border-left: 4px solid #0dcaf0;
+        background: linear-gradient(135deg, #e7f7ff, #cce7ff);
+    }
+    
+    /* Custom alert styling to replace Bootstrap alert */
+    .custom-alert {
+        position: relative;
+        padding: 1rem 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.375rem;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+    
+    .custom-alert-heading {
+        color: inherit;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0;
+    }
+    
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.375rem;
+        border-bottom-left-radius: 0.375rem;
+    }
+    
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card iade-card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-undo me-2"></i>
+                        Satış İade İşlemi
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Uyarı Kutusu -->
+                    <div class="warning-box">
+                        <h5 class="text-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Dikkat!
+                        </h5>
+                        <p class="mb-2">
+                            Bu satış iade edildiğinde, iade tutarı kadar <strong>hediye çeki</strong> otomatik olarak oluşturulacaktır.
+                        </p>
+                        <ul class="mb-0">
+                            <li>Hediye çeki 1 yıl geçerli olacaktır</li>
+                            <li>Sadece mağazamızda kullanılabilir</li>
+                            <li>Tek seferlik kullanılabilir</li>
+                            <li>Para üstü verilmez</li>
+                        </ul>
+                    </div>
+
+                    <!-- Satış Bilgileri -->
+                    <div class="satis-info">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-receipt me-2"></i>
+                            İade Edilecek Satış Bilgileri
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-sm-6 mb-2">
+                                <strong>Satış No:</strong> {{ satis.satis_no|default:satis.siparis_no }}
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Satış Tarihi:</strong> {{ satis.siparis_tarihi|date:"d.m.Y H:i" }}
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Müşteri:</strong>
+                                {% if satis.musteri %}
+                                    {{ satis.musteri.ad }} {{ satis.musteri.soyad }}
+                                {% else %}
+                                    <span class="text-muted">Bireysel Satış</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Satıcı:</strong> {{ satis.satici.first_name|default:satis.satici.username }}
+                            </div>
+                            <div class="col-12 mb-2">
+                                <strong>Toplam Satış Tutarı:</strong>
+                                <span class="text-success">{{ satis.toplam_tutar|floatformat:2 }} ₺</span>
+                            </div>
+                            <div class="col-12">
+                                <strong>İade Tutarı:</strong>
+                                <span class="amount-highlight" id="toplam-iade-tutari">0,00 ₺</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İade Edilecek Ürünler -->
+                    <div class="mb-4">
+                        <h5 class="text-warning mb-3">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            İade Edilecek Ürünleri Seçin
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            İade etmek istediğiniz ürünleri ve miktarlarını seçin. İade edilecek ürünler otomatik olarak stoka geri eklenecektir.
+                        </p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%;">Ürün</th>
+                                        <th class="text-center" style="width: 15%;">Satılan</th>
+                                        <th class="text-center" style="width: 15%;">İade Miktar</th>
+                                        <th class="text-end" style="width: 15%;">Birim Fiyat</th>
+                                        <th class="text-end" style="width: 15%;">İade Tutarı</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for kalem in kalemler %}
+                                    <tr class="urun-satiri" data-urun-id="{{ kalem.id }}" data-birim-fiyat="{{ kalem.birim_fiyat }}" data-max-miktar="{{ kalem.miktar }}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="form-check me-2">
+                                                    <input class="form-check-input urun-secim" 
+                                                           type="checkbox" 
+                                                           id="urun_{{ kalem.id }}" 
+                                                           name="urun_secili_{{ kalem.id }}"
+                                                           onchange="urunSecimDegisti({{ kalem.id }})">
+                                                </div>
+                                                <div>
+                                                    <strong>{{ kalem.urun.ad }}</strong>
+                                                    {% if kalem.urun.barkod %}
+                                                        <br><small class="text-muted">{{ kalem.urun.barkod }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">{{ kalem.miktar }} adet</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="number" 
+                                                   class="form-control form-control-sm iade-miktar" 
+                                                   id="iade_miktar_{{ kalem.id }}"
+                                                   name="iade_miktar_{{ kalem.id }}"
+                                                   min="0" 
+                                                   max="{{ kalem.miktar }}" 
+                                                   value="0"
+                                                   disabled
+                                                   onchange="hesaplaIadeTutari({{ kalem.id }})"
+                                                   style="width: 80px;">
+                                        </td>
+                                        <td class="text-end">
+                                            {{ kalem.birim_fiyat|floatformat:2 }} ₺
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge bg-warning text-dark iade-tutar" id="iade_tutar_{{ kalem.id }}">0,00 ₺</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning">
+                                        <td colspan="4" class="text-end"><strong>Toplam İade Tutarı:</strong></td>
+                                        <td class="text-end">
+                                            <strong class="fs-5 text-danger" id="footer-toplam-iade">0,00 ₺</strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        <!-- Hızlı Seçim Butonları -->
+                        <div class="mb-3">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="tumunuSec()">
+                                    <i class="fas fa-check-square me-1"></i>Tümünü Seç
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="hepsiniTemizle()">
+                                    <i class="fas fa-square me-1"></i>Temizle
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="tamIadeYap()">
+                                    <i class="fas fa-undo me-1"></i>Tam İade
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- İade Formu -->
+                    <form method="post" id="iade-formu">
+                        {% csrf_token %}
+                        
+                        <div class="custom-alert" id="iade-ozeti" style="display: none;">
+                            <h6 class="custom-alert-heading">
+                                <i class="fas fa-clipboard-list me-2"></i>
+                                İade Özeti
+                            </h6>
+                            <div id="iade-ozeti-icerik"></div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'satis:liste' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Geri Dön
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="iade-btn" disabled>
+                                <i class="fas fa-undo me-2"></i>
+                                İade Et ve Hediye Çeki Oluştur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let toplamIadeTutari = 0;
+
+// Ürün seçimi değiştiğinde
+function urunSecimDegisti(kalemId) {
+    // DOM hazır mı kontrol et
+    if (document.readyState !== 'complete') {
+        console.log('DOM henüz hazır değil, 100ms beklenecek...');
+        setTimeout(function() { urunSecimDegisti(kalemId); }, 100);
+        return;
+    }
+    
+    const checkbox = document.getElementById(`urun_${kalemId}`);
+    const miktarInput = document.getElementById(`iade_miktar_${kalemId}`);
+    const urunSatir = document.querySelector(`[data-urun-id="${kalemId}"]`);
+    
+    // Elementlerin varlığını kontrol et
+    if (!checkbox || !miktarInput || !urunSatir) {
+        console.error(`Ürün seçim değişikliği için gerekli elementler bulunamadı: kalemId=${kalemId}`);
+        return;
+    }
+    
+    const maxMiktar = parseInt(urunSatir.dataset.maxMiktar) || 0;
+    
+    if (checkbox.checked) {
+        miktarInput.disabled = false;
+        miktarInput.value = maxMiktar; // Varsayılan olarak tam miktar
+        hesaplaIadeTutari(kalemId);
+    } else {
+        miktarInput.disabled = true;
+        miktarInput.value = 0;
+        hesaplaIadeTutari(kalemId);
+    }
+}
+
+// İade tutarını hesapla
+function hesaplaIadeTutari(kalemId) {
+    const miktarInput = document.getElementById(`iade_miktar_${kalemId}`);
+    const iadeTutarSpan = document.getElementById(`iade_tutar_${kalemId}`);
+    const urunSatir = document.querySelector(`[data-urun-id="${kalemId}"]`);
+    
+    // Elementlerin varlığını kontrol et
+    if (!miktarInput || !iadeTutarSpan || !urunSatir) {
+        console.error(`İade hesaplama için gerekli elementler bulunamadı: kalemId=${kalemId}`);
+        return;
+    }
+    
+    const birimFiyat = parseFloat(urunSatir.dataset.birimFiyat) || 0;
+    const miktar = parseInt(miktarInput.value) || 0;
+    const tutarHesaplanan = miktar * birimFiyat;
+    
+    iadeTutarSpan.textContent = formatTurkishCurrency(tutarHesaplanan);
+    
+    // Toplam iade tutarını güncelle
+    toplamIadeHesapla();
+}
+
+// Toplam iade tutarını hesapla
+function toplamIadeHesapla() {
+    console.log('toplamIadeHesapla çağrıldı');
+    toplamIadeTutari = 0;
+    const iadeTutarSpanlar = document.querySelectorAll('.iade-tutar');
+    
+    iadeTutarSpanlar.forEach(span => {
+        const tutar = parseFloat(span.textContent.replace(' ₺', '').replace(',', '.')) || 0;
+        toplamIadeTutari += tutar;
+    });
+    
+    // Toplam tutarları güncelle - elementlerin varlığını kontrol et
+    const toplamIadeElement = document.getElementById('toplam-iade-tutari');
+    const footerToplamElement = document.getElementById('footer-toplam-iade');
+    
+    if (toplamIadeElement) {
+        toplamIadeElement.textContent = formatTurkishCurrency(toplamIadeTutari);
+    }
+    if (footerToplamElement) {
+        footerToplamElement.textContent = formatTurkishCurrency(toplamIadeTutari);
+    }
+    
+    // İade butonunu aktif/pasif yap
+    const iadeBtn = document.getElementById('iade-btn');
+    if (iadeBtn) {
+        if (toplamIadeTutari > 0) {
+            console.log('Toplam tutar > 0, iade butonu aktif ediliyor ve özet gösteriliyor');
+            iadeBtn.disabled = false;
+            
+            // Özet göstermeden önce element durumunu kontrol et
+            console.log('Özet göstermeden ÖNCE element kontrolü:');
+            const preCheck_icerik = document.getElementById('iade-ozeti-icerik');
+            const preCheck_div = document.getElementById('iade-ozeti');
+            console.log('- iade-ozeti-icerik:', !!preCheck_icerik);
+            console.log('- iade-ozeti:', !!preCheck_div);
+            
+            // Sadece tutar sıfırdan büyükse özet göster
+            iadeOzetiGoster();
+        } else {
+            console.log('Toplam tutar = 0, iade butonu pasif ediliyor ve özet gizleniyor');
+            iadeBtn.disabled = true;
+            iadeOzetiGizle();
+        }
+    } else {
+        console.warn('İade butonu bulunamadı');
+    }
+}
+
+// Para formatı
+function formatTurkishCurrency(amount) {
+    return new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount) + ' ₺';
+}
+
+// Tümünü seç
+function tumunuSec() {
+    const checkboxes = document.querySelectorAll('.urun-secim');
+    checkboxes.forEach(checkbox => {
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            const kalemId = checkbox.id.replace('urun_', '');
+            urunSecimDegisti(kalemId);
+        }
+    });
+}
+
+// Hepsini temizle
+function hepsiniTemizle() {
+    const checkboxes = document.querySelectorAll('.urun-secim');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            checkbox.checked = false;
+            const kalemId = checkbox.id.replace('urun_', '');
+            urunSecimDegisti(kalemId);
+        }
+    });
+}
+
+// Tam iade yap (tüm ürünlerin tam miktarını seç)
+function tamIadeYap() {
+    tumunuSec();
+}
+
+// İade özeti göster
+function iadeOzetiGoster() {
+    const secilenUrunler = [];
+    const checkboxes = document.querySelectorAll('.urun-secim:checked');
+    
+    console.log('iadeOzetiGoster çağrıldı, seçili ürün sayısı:', checkboxes.length);
+    
+    // Eğer hiç seçili ürün yoksa özeti göstermeye gerek yok
+    if (checkboxes.length === 0) {
+        console.log('Hiç seçili ürün yok, özet gizleniyor');
+        iadeOzetiGizle();
+        return;
+    }
+    
+    checkboxes.forEach(checkbox => {
+        const kalemId = checkbox.id.replace('urun_', '');
+        const satir = document.querySelector(`[data-urun-id="${kalemId}"]`);
+        if (!satir) {
+            console.warn(`Satır bulunamadı: kalemId=${kalemId}`);
+            return; // Satır bulunamazsa geç
+        }
+        
+        const urunAdiElement = satir.querySelector('strong');
+        const miktarElement = document.getElementById(`iade_miktar_${kalemId}`);
+        const tutarElement = document.getElementById(`iade_tutar_${kalemId}`);
+        
+        if (!urunAdiElement || !miktarElement || !tutarElement) {
+            console.warn(`Alt elementler bulunamadı: kalemId=${kalemId}`, {
+                urunAdi: !!urunAdiElement,
+                miktar: !!miktarElement,
+                tutar: !!tutarElement
+            });
+            return; // Elementler bulunamazsa geç
+        }
+        
+        const urunAdi = urunAdiElement.textContent;
+        const miktar = miktarElement.value;
+        const tutar = tutarElement.textContent;
+        
+        secilenUrunler.push(`• ${urunAdi}: ${miktar} adet - ${tutar}`);
+    });
+    
+    // Element var mı kontrol et - multiple methods with cache clearing
+    let ozeti_icerik = document.getElementById('iade-ozeti-icerik');
+    let ozeti_div = document.getElementById('iade-ozeti');
+    
+    // DOM Cache clearing trick
+    if (!ozeti_icerik || !ozeti_div) {
+        console.log('getElementById başarısız, cache temizlenerek tekrar denenecek...');
+        // Force DOM reparse by accessing document.documentElement
+        document.documentElement.offsetHeight; // Force reflow
+        
+        ozeti_icerik = document.getElementById('iade-ozeti-icerik');
+        ozeti_div = document.getElementById('iade-ozeti');
+    }
+    
+    // Eğer getElementById ile bulunamadıysa querySelector dene
+    if (!ozeti_icerik) {
+        ozeti_icerik = document.querySelector('#iade-ozeti-icerik');
+        console.log('getElementById başarısız, querySelector ile bulundu:', !!ozeti_icerik);
+    }
+    if (!ozeti_div) {
+        ozeti_div = document.querySelector('#iade-ozeti');
+        console.log('getElementById başarısız, querySelector ile bulundu:', !!ozeti_div);
+    }
+    
+    // Form içinde direkt arama
+    if (!ozeti_icerik || !ozeti_div) {
+        const form = document.getElementById('iade-formu');
+        if (form) {
+            if (!ozeti_div) {
+                ozeti_div = form.querySelector('#iade-ozeti');
+                console.log('Form içinde özet div bulundu:', !!ozeti_div);
+            }
+            if (!ozeti_icerik) {
+                ozeti_icerik = form.querySelector('#iade-ozeti-icerik');
+                console.log('Form içinde özet içerik bulundu:', !!ozeti_icerik);
+            }
+        }
+    }
+    
+    // Hala bulunamadıysa tüm elementleri listele
+    if (!ozeti_icerik || !ozeti_div) {
+        console.log('Elementler hala bulunamadı, DOM inceleniyor...');
+        const allDivs = document.querySelectorAll('div[id*="iade"]');
+        console.log('iade içeren tüm div\'ler:', Array.from(allDivs).map(d => `${d.tagName}#${d.id}`));
+        
+        const form = document.getElementById('iade-formu');
+        if (form) {
+            console.log('Form içindeki tüm elementler:');
+            const formElements = form.querySelectorAll('*[id]');
+            Array.from(formElements).forEach(el => {
+                console.log(`- ${el.tagName}#${el.id}`);
+            });
+        }
+    }
+    
+    console.log('Özet elementleri kontrolü:', {
+        ozeti_icerik: !!ozeti_icerik,
+        ozeti_div: !!ozeti_div,
+        secilenUrunSayisi: secilenUrunler.length
+    });
+    
+    if (!ozeti_icerik || !ozeti_div) {
+        console.warn('İade özeti elementleri henüz yüklenemedi, fonksiyon çıkılıyor');
+        
+        // Son çare: Elementleri yeniden oluşturmaya çalış (SADECE gerçekten yoksa)
+        console.log('Elementleri yeniden oluşturmaya çalışılıyor...');
+        const form = document.getElementById('iade-formu');
+        if (form) {
+            // Önce gerçekten özet div'i yoksa kontrol et
+            const existingOzeti = form.querySelector('#iade-ozeti');
+            if (!existingOzeti) {
+                console.log('Özet div\'i gerçekten yok, yeniden oluşturuluyor...');
+                
+                // Özet div'ini yeniden oluştur
+                const newOzetiDiv = document.createElement('div');
+                newOzetiDiv.id = 'iade-ozeti';
+                newOzetiDiv.className = 'custom-alert';
+                newOzetiDiv.style.display = 'none';
+                newOzetiDiv.setAttribute('data-protected', 'true');
+                newOzetiDiv.innerHTML = `
+                    <h6 class="custom-alert-heading">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        İade Özeti
+                    </h6>
+                    <div id="iade-ozeti-icerik"></div>
+                `;
+                
+                // Form'un başına ekle
+                const firstChild = form.firstElementChild;
+                if (firstChild && firstChild.tagName === 'INPUT' && firstChild.name === 'csrfmiddlewaretoken') {
+                    form.insertBefore(newOzetiDiv, firstChild.nextElementSibling);
+                } else {
+                    form.insertBefore(newOzetiDiv, firstChild);
+                }
+                
+                console.log('Özet div\'i yeniden oluşturuldu');
+                
+                // Tekrar dene
+                setTimeout(function() {
+                    iadeOzetiGoster();
+                }, 100);
+                return;
+            } else {
+                console.log('Özet div\'i zaten var ama getElementById ile bulunamıyor, caching sorunu olabilir');
+                // Cache problemi olabilir, 50ms sonra tekrar dene
+                setTimeout(function() {
+                    iadeOzetiGoster();
+                }, 50);
+                return;
+            }
+        }
+        
+        // Element bulunamadığında da özeti gizlemeye çalış
+        const alternatif_div = document.querySelector('#iade-ozeti');
+        if (alternatif_div) {
+            alternatif_div.style.display = 'none';
+        }
+        return;
+    }
+    
+    if (secilenUrunler.length > 0) {
+        console.log('Özet gösteriliyor, toplam tutar:', toplamIadeTutari);
+        
+        // Özet içeriğini güncelle
+        ozeti_icerik.innerHTML = 
+            `<p class="mb-1"><strong>İade edilecek ürünler:</strong></p>
+             ${secilenUrunler.join('<br>')}
+             <hr class="my-2">
+             <p class="mb-0"><strong>Toplam: ${formatTurkishCurrency(toplamIadeTutari)}</strong></p>`;
+        
+        // Element hala DOM'da mı kontrol et
+        if (ozeti_div.parentNode) {
+            ozeti_div.style.display = 'block';
+            console.log('Özet başarıyla gösterildi');
+            
+            // Element korunması için attribut ekle
+            ozeti_div.setAttribute('data-protected', 'true');
+            ozeti_icerik.setAttribute('data-protected', 'true');
+        } else {
+            console.warn('Özet div\'i DOM\'dan kaldırılmış, tekrar oluşturuluyor...');
+            // Element DOM'dan kaldırılmışsa tekrar oluştur
+            const form = document.getElementById('iade-formu');
+            if (form) {
+                const recreatedDiv = document.createElement('div');
+                recreatedDiv.id = 'iade-ozeti';
+                recreatedDiv.className = 'custom-alert';
+                recreatedDiv.setAttribute('data-protected', 'true');
+                recreatedDiv.innerHTML = `
+                    <h6 class="custom-alert-heading">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        İade Özeti
+                    </h6>
+                    <div id="iade-ozeti-icerik" data-protected="true">
+                        <p class="mb-1"><strong>İade edilecek ürünler:</strong></p>
+                        ${secilenUrunler.join('<br>')}
+                        <hr class="my-2">
+                        <p class="mb-0"><strong>Toplam: ${formatTurkishCurrency(toplamIadeTutari)}</strong></p>
+                    </div>
+                `;
+                recreatedDiv.style.display = 'block';
+                
+                const firstChild = form.firstElementChild;
+                if (firstChild && firstChild.tagName === 'INPUT' && firstChild.name === 'csrfmiddlewaretoken') {
+                    form.insertBefore(recreatedDiv, firstChild.nextElementSibling);
+                } else {
+                    form.insertBefore(recreatedDiv, firstChild);
+                }
+                console.log('Özet div\'i yeniden oluşturuldu ve gösterildi');
+            }
+        }
+    } else {
+        console.log('Seçili ürün yok, özet gizleniyor');
+        if (ozeti_div && ozeti_div.parentNode) {
+            ozeti_div.style.display = 'none';
+        }
+    }
+}
+
+// İade özeti gizle
+function iadeOzetiGizle() {
+    console.log('iadeOzetiGizle çağrıldı');
+    const ozeti_div = document.getElementById('iade-ozeti');
+    if (ozeti_div) {
+        ozeti_div.style.display = 'none';
+        console.log('İade özeti gizlendi');
+    } else {
+        console.warn('İade özeti div bulunamadı, gizlenemedi');
+    }
+}
+
+// Form gönderilmeden önce onay
+document.getElementById('iade-formu').addEventListener('submit', function(e) {
+    console.log('🔍 JS DEBUG: Form submit event tetiklendi');
+    
+    const secilenCheckboxlar = document.querySelectorAll('.urun-secim:checked');
+    const secilenUrunSayisi = secilenCheckboxlar.length;
+    console.log(`🔍 JS DEBUG: Seçilen checkbox sayısı: ${secilenUrunSayisi}`);
+    console.log('🔍 JS DEBUG: Seçilen checkboxlar:', Array.from(secilenCheckboxlar).map(cb => cb.id));
+    console.log(`🔍 JS DEBUG: Toplam iade tutarı: ${toplamIadeTutari}`);
+    
+    if (secilenUrunSayisi === 0) {
+        console.log('🔍 JS DEBUG: Hiç ürün seçilmemiş, form gönderimini engelliyor');
+        e.preventDefault();
+        alert('İade için en az bir ürün seçmelisiniz!');
+        return;
+    }
+    
+    console.log('🔍 JS DEBUG: Kullanıcıdan onay isteniyor...');
+    const confirmed = confirm(
+        `${secilenUrunSayisi} ürün için iade işlemi yapılacak.\n` +
+        `Toplam iade tutarı: ${formatTurkishCurrency(toplamIadeTutari)}\n\n` +
+        `• Seçilen ürünler stoka geri eklenecek\n` +
+        `• ${formatTurkishCurrency(toplamIadeTutari)} tutarında hediye çeki oluşturulacak\n` +
+        `• Bu işlem geri alınamaz\n\n` +
+        `İade işlemini onaylıyor musunuz?`
+    );
+    
+    if (!confirmed) {
+        console.log('🔍 JS DEBUG: Kullanıcı onaylamadı, form gönderimini engelliyor');
+        e.preventDefault();
+    } else {
+        console.log('🔍 JS DEBUG: Kullanıcı onayladı, form gönderiliyor...');
+        // Form verilerini logla
+        const formData = new FormData(document.getElementById('iade-formu'));
+        console.log('🔍 JS DEBUG: Form verileri:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}: ${value}`);
+        }
+    }
+});
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('İade sayfası DOM yüklendi');
+    
+    // Elementlerin varlığını kontrol et
+    setTimeout(function() {
+        const form = document.getElementById('iade-formu');
+        const ozeti_icerik = document.getElementById('iade-ozeti-icerik');
+        const ozeti_div = document.getElementById('iade-ozeti');
+        const iadeBtn = document.getElementById('iade-btn');
+        
+        console.log('Element kontrolleri:');
+        console.log('- iade-formu:', form ? 'Bulundu' : 'Bulunamadı');
+        console.log('- iade-ozeti-icerik:', ozeti_icerik ? 'Bulundu' : 'Bulunamadı');
+        console.log('- iade-ozeti:', ozeti_div ? 'Bulundu' : 'Bulunamadı');
+        console.log('- iade-btn:', iadeBtn ? 'Bulundu' : 'Bulunamadı');
+        
+        // Eğer temel elementler yoksa, sayfa henüz tam yüklenmemiş demektir
+        if (!form || !ozeti_icerik || !ozeti_div || !iadeBtn) {
+            console.warn('Temel elementler henüz yüklenmedi, tekrar deneniyor...');
+            setTimeout(arguments.callee, 200); // 200ms sonra tekrar dene
+            return;
+        }
+        
+        console.log('Tüm elementler hazır, iade sayfası kullanıma hazır');
+        
+        // Custom alert kullandığımız için Bootstrap Alert ile ilgili işlem yapmaya gerek yok
+        console.log('Custom alert sistemi aktif, Bootstrap müdahalesi yok');
+        
+        // Manuel element test
+        console.log('Manuel element testleri:');
+        const testElements = {
+            'iade-ozeti': document.getElementById('iade-ozeti'),
+            'iade-ozeti-icerik': document.getElementById('iade-ozeti-icerik'),
+            'iade-btn': document.getElementById('iade-btn'),
+            'iade-formu': document.getElementById('iade-formu')
+        };
+        
+        Object.keys(testElements).forEach(key => {
+            const element = testElements[key];
+            console.log(`- ${key}:`, element ? 'Bulundu' : 'Bulunamadı');
+            if (element) {
+                console.log(`  - visible:`, element.offsetParent !== null);
+                console.log(`  - display:`, getComputedStyle(element).display);
+            }
+        });
+        
+        // Test için özet gösterme fonksiyonu ekle
+        window.testOzetiGoster = function() {
+            console.log('TEST: Özet gösteriliyor...');
+            const ozeti_div = document.getElementById('iade-ozeti');
+            const ozeti_icerik = document.getElementById('iade-ozeti-icerik');
+            
+            if (ozeti_div && ozeti_icerik) {
+                ozeti_icerik.innerHTML = '<p>TEST: Bu bir test mesajıdır</p>';
+                ozeti_div.style.display = 'block';
+                console.log('TEST: Özet başarıyla gösterildi');
+            } else {
+                console.error('TEST: Özet elementleri bulunamadı');
+            }
+        };
+        
+        console.log('Test fonksiyonu hazır. Console\'da testOzetiGoster() çağırabilirsiniz.');
+        
+        // DOM değişikliklerini izle ve korumalı elementleri koru
+        const targetNode = document.getElementById('iade-formu');
+        if (targetNode) {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        console.log('DOM CHANGE: Form içinde element değişikliği:', mutation);
+                        
+                        // Kaldırılan elementleri kontrol et
+                        if (mutation.removedNodes.length > 0) {
+                            Array.from(mutation.removedNodes).forEach(node => {
+                                if (node.nodeType === 1 && node.id) {
+                                    console.log('REMOVED NODE:', node.id);
+                                    
+                                    // Eğer korumalı bir element kaldırılmışsa geri ekle
+                                    if (node.getAttribute && node.getAttribute('data-protected') === 'true') {
+                                        console.warn('Korumalı element kaldırıldı, geri ekleniyor:', node.id);
+                                        
+                                        setTimeout(function() {
+                                            if (!document.getElementById(node.id)) {
+                                                const form = document.getElementById('iade-formu');
+                                                if (form) {
+                                                    const firstChild = form.firstElementChild;
+                                                    if (firstChild && firstChild.tagName === 'INPUT' && firstChild.name === 'csrfmiddlewaretoken') {
+                                                        form.insertBefore(node, firstChild.nextElementSibling);
+                                                    } else {
+                                                        form.insertBefore(node, firstChild);
+                                                    }
+                                                    console.log('Korumalı element başarıyla geri eklendi:', node.id);
+                                                }
+                                            }
+                                        }, 10);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Eklenen elementleri logla
+                        if (mutation.addedNodes.length > 0) {
+                            Array.from(mutation.addedNodes).forEach(node => {
+                                if (node.nodeType === 1 && node.id) {
+                                    console.log('ADDED NODE:', node.id);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(targetNode, {
+                childList: true,
+                subtree: true
+            });
+            
+            console.log('DOM Mutation Observer aktif - korumalı elementler izleniyor');
+        }
+        
+        // İlk yüklemede hesaplama yapmaya gerek yok, ürün seçimi yapıldığında zaten hesaplanacak
+        // toplamIadeHesapla();
+    }, 100); // 100ms bekle
+});
+</script>
+{% endblock %}

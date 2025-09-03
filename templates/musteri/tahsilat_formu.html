@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tahsilat Formu{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-money-bill"></i> 
+                        {% if musteri %}
+                            {{ musteri.tam_ad }} - Tahsilat Formu
+                        {% else %}
+                            Yeni Tahsilat
+                        {% endif %}
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if not musteri %}
+                        <div class="mb-3">
+                            <label for="musteri_select" class="form-label">Müşteri Seç</label>
+                            <select name="musteri_id" id="musteri_select" class="form-select" required>
+                                <option value="">Müşteri seçin...</option>
+                            </select>
+                            <div class="invalid-feedback">Lütfen bir müşteri seçin.</div>
+                        </div>
+                        {% else %}
+                        <input type="hidden" name="musteri_id" value="{{ musteri.id }}">
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tutar" class="form-label">Tahsilat Tutarı (₺)</label>
+                                    <input type="number" step="0.01" name="tutar" id="tutar" class="form-control" required min="0.01">
+                                    <div class="invalid-feedback">Geçerli bir tutar girin.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tahsilat_tipi" class="form-label">Tahsilat Tipi</label>
+                                    <select name="tahsilat_tipi" id="tahsilat_tipi" class="form-select" required>
+                                        <option value="">Seçin...</option>
+                                        <option value="nakit">Nakit</option>
+                                        <option value="kart">Kart</option>
+                                        <option value="havale">Havale/EFT</option>
+                                        <option value="cek">Çek</option>
+                                        <option value="senet">Senet</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Çek/Senet için ek alanlar -->
+                        <div id="cek_senet_fields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="cek_senet_no" class="form-label">Çek/Senet No</label>
+                                        <input type="text" name="cek_senet_no" id="cek_senet_no" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="banka" class="form-label">Banka</label>
+                                        <input type="text" name="banka" id="banka" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="vade_tarihi" class="form-label">Vade Tarihi</label>
+                                        <input type="date" name="vade_tarihi" id="vade_tarihi" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Havale/EFT için ek alan -->
+                        <div id="havale_fields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="referans_no" class="form-label">Referans No</label>
+                                <input type="text" name="referans_no" id="referans_no" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="aciklama" class="form-label">Açıklama</label>
+                            <textarea name="aciklama" id="aciklama" class="form-control" rows="3" placeholder="İsteğe bağlı..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'musteri:borc_alacak_listesi' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Geri
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Tahsilat Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Müşteri Bilgi Paneli -->
+        <div class="col-md-4">
+            {% if musteri %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Müşteri Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Ad Soyad:</strong> {{ musteri.tam_ad }}</p>
+                    <p><strong>Telefon:</strong> {{ musteri.telefon }}</p>
+                    {% if musteri.firma_adi %}
+                    <p><strong>Firma:</strong> {{ musteri.firma_adi }}</p>
+                    {% endif %}
+                    <p><strong>Mevcut Borç:</strong> 
+                        <span class="badge bg-danger">{{ musteri.acik_hesap_bakiye|floatformat:2 }}₺</span>
+                    </p>
+                </div>
+            </div>
+            
+            {% if odenmemis_satislar %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ödenmemiş Satışlar</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Satış No</th>
+                                    <th>Tarih</th>
+                                    <th>Tutar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for satis in odenmemis_satislar|slice:":10" %}
+                                <tr>
+                                    <td>{{ satis.satis_no }}</td>
+                                    <td>{{ satis.satis_tarihi|date:"d.m.Y" }}</td>
+                                    <td>{{ satis.toplam_tutar|floatformat:2 }}₺</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if odenmemis_satislar.count > 10 %}
+                    <small class="text-muted">ve {{ odenmemis_satislar.count|add:"-10" }} satış daha...</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Bilgi</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Önce müşteri seçin. Müşteri bilgileri burada görüntülenecek.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tahsilatTipi = document.getElementById('tahsilat_tipi');
+    const cekSenetFields = document.getElementById('cek_senet_fields');
+    const havaleFields = document.getElementById('havale_fields');
+    
+    tahsilatTipi.addEventListener('change', function() {
+        const value = this.value;
+        
+        // Tüm ek alanları gizle
+        cekSenetFields.style.display = 'none';
+        havaleFields.style.display = 'none';
+        
+        // Seçime göre ilgili alanları göster
+        if (value === 'cek' || value === 'senet') {
+            cekSenetFields.style.display = 'block';
+        } else if (value === 'havale') {
+            havaleFields.style.display = 'block';
+        }
+    });
+    
+    {% if not musteri %}
+    // Müşteri seçimi için Select2
+    $('#musteri_select').select2({
+        ajax: {
+            url: "{% url 'musteri:tahsilat_musteri_ara' %}",
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term,
+                    page: params.page
+                };
+            },
+            processResults: function (data, params) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        placeholder: 'Müşteri ara...',
+        minimumInputLength: 2,
+        templateResult: function(data) {
+            if (data.loading) return data.text;
+            return $('<span>' + data.text + '</span>');
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

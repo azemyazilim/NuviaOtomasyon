@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tahsilat Raporları{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2 text-success"></i>Tahsilat Raporları
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Özet Kartlar -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-0">₺{{ bugün_tahsilat|floatformat:2 }}</h4>
+                                        <p class="mb-0">Bugünkü Tahsilat</p>
+                                        <small class="opacity-75">{{ bugün }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-hand-holding-usd fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-0">₺{{ bu_ay_tahsilat|floatformat:2 }}</h4>
+                                        <p class="mb-0">Bu Ay Toplam</p>
+                                        <small class="opacity-75">{{ bu_ay_başı|date:"F Y" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ödeme Tipi İstatistikleri -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-credit-card me-2"></i>Ödeme Tipi Bazında Tahsilat (Bu Ay)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% for tip in odeme_tipi_istatistikleri %}
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-box me-3" style="background-color: {{ tip.renk }}20; color: {{ tip.renk }};">
+                                        <i class="{{ tip.ikon }}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-medium">{{ tip.ad }}</span>
+                                            <span class="badge bg-secondary">{{ tip.odeme_adedi }} ödeme</span>
+                                        </div>
+                                        <div class="progress mt-1" style="height: 6px;">
+                                            {% if tip.bu_ay_toplam %}
+                                            <div class="progress-bar" style="width: 85%; background-color: {{ tip.renk }};"></div>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">₺{{ tip.bu_ay_toplam|default:0|floatformat:2 }}</small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-credit-card fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted">Bu ay hiç tahsilat kaydı yok</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-trophy me-2"></i>En Büyük Tahsilatlar
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% for tahsilat in en_buyuk_tahsilatlar %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <small class="fw-bold">{{ tahsilat.satis.siparis_no }}</small>
+                                        {% if tahsilat.satis.musteri %}
+                                            <br><small class="text-muted">{{ tahsilat.satis.musteri.ad }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-success">₺{{ tahsilat.tutar|floatformat:2 }}</div>
+                                        <small class="text-muted">{{ tahsilat.get_odeme_tipi_display }}</small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-trophy fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Bu ay tahsilat yok</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Satıcı Bazında Tahsilat -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user-tie me-2"></i>Satıcı Bazında Tahsilat (Bu Ay)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% for satici in satici_tahsilat %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="fw-medium">
+                                            {% if satici.satis__satici__first_name %}
+                                                {{ satici.satis__satici__first_name }} {{ satici.satis__satici__last_name }}
+                                            {% else %}
+                                                {{ satici.satis__satici__username }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-primary">₺{{ satici.toplam_tahsilat|floatformat:2 }}</div>
+                                        <small class="text-muted">{{ satici.tahsilat_adedi }} tahsilat</small>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-user-tie fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Bu ay satıcı verisi yok</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-calendar-alt me-2"></i>Günlük Trend (Son 30 Gün)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 300px;">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tarih</th>
+                                                <th class="text-center">Adet</th>
+                                                <th class="text-end">Tutar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for gun in günlük_trend %}
+                                            <tr>
+                                                <td>{{ gun.tarih|date:"d.m.Y" }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info">{{ gun.adet }}</span>
+                                                </td>
+                                                <td class="text-end text-success fw-bold">₺{{ gun.toplam|default:0|floatformat:2 }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">Son 30 günde tahsilat kaydı yok</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hızlı Erişim Butonları -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-link me-2"></i>Hızlı Erişim
+                                </h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <a href="{% url 'satis:tahsilat_listesi' %}" class="btn btn-success me-2">
+                                    <i class="fas fa-list"></i> Tahsilat Listesi
+                                </a>
+                                <a href="{% url 'satis:liste' %}" class="btn btn-primary me-2">
+                                    <i class="fas fa-shopping-cart"></i> Satış Listesi
+                                </a>
+                                <a href="{% url 'satis:ekrani' %}" class="btn btn-info me-2">
+                                    <i class="fas fa-plus"></i> Yeni Satış
+                                </a>
+                                <a href="{% url 'gider:rapor' %}" class="btn btn-warning">
+                                    <i class="fas fa-chart-line"></i> Gider Raporları
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-box {
+    width: 35px;
+    height: 35px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    border: none;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body h4 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

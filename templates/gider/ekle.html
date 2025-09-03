@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .required {
+        color: #dc3545;
+    }
+    
+    .form-floating .form-control:focus ~ label,
+    .form-floating .form-control:not(:placeholder-shown) ~ label {
+        color: #007bff;
+    }
+    
+    .kategori-preview {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-plus-circle text-primary me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">Yeni gider kaydı oluşturun</p>
+        </div>
+        <a href="{% url 'gider:liste' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Geri Dön
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Temel Bilgiler -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-info-circle me-2"></i>Temel Bilgiler
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <div class="form-floating">
+                        {{ form.baslik }}
+                        <label for="{{ form.baslik.id_for_label }}">Gider Başlığı <span class="required">*</span></label>
+                    </div>
+                    {% if form.baslik.errors %}
+                        <div class="text-danger small">{{ form.baslik.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="form-floating">
+                        {{ form.kategori }}
+                        <label for="{{ form.kategori.id_for_label }}">Kategori <span class="required">*</span></label>
+                    </div>
+                    {% if form.kategori.errors %}
+                        <div class="text-danger small">{{ form.kategori.errors.0 }}</div>
+                    {% endif %}
+                    <div id="kategori-preview"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lira-sign"></i>
+                        </span>
+                        <div class="form-floating">
+                            {{ form.tutar }}
+                            <label for="{{ form.tutar.id_for_label }}">Tutar <span class="required">*</span></label>
+                        </div>
+                    </div>
+                    {% if form.tutar.errors %}
+                        <div class="text-danger small">{{ form.tutar.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="form-floating">
+                        {{ form.tarih }}
+                        <label for="{{ form.tarih.id_for_label }}">Gider Tarihi <span class="required">*</span></label>
+                    </div>
+                    {% if form.tarih.errors %}
+                        <div class="text-danger small">{{ form.tarih.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <div class="form-floating">
+                        {{ form.odeme_yontemi }}
+                        <label for="{{ form.odeme_yontemi.id_for_label }}">Ödeme Yöntemi</label>
+                    </div>
+                    {% if form.odeme_yontemi.errors %}
+                        <div class="text-danger small">{{ form.odeme_yontemi.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ek Bilgiler -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-file-alt me-2"></i>Ek Bilgiler
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        {{ form.tedarikci }}
+                        <label for="{{ form.tedarikci.id_for_label }}">Tedarikçi/Firma</label>
+                    </div>
+                    {% if form.tedarikci.errors %}
+                        <div class="text-danger small">{{ form.tedarikci.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-floating">
+                        {{ form.fatura_no }}
+                        <label for="{{ form.fatura_no.id_for_label }}">Fatura/Fiş No</label>
+                    </div>
+                    {% if form.fatura_no.errors %}
+                        <div class="text-danger small">{{ form.fatura_no.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-floating">
+                    {{ form.aciklama }}
+                    <label for="{{ form.aciklama.id_for_label }}">Açıklama</label>
+                </div>
+                {% if form.aciklama.errors %}
+                    <div class="text-danger small">{{ form.aciklama.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Belgeler -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-paperclip me-2"></i>Belgeler
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-camera me-1"></i>Fatura/Fiş Fotoğrafı
+                    </label>
+                    {{ form.fatura_fotografi }}
+                    <div class="form-text">JPG, PNG dosyalarını yükleyebilirsiniz.</div>
+                    {% if form.fatura_fotografi.errors %}
+                        <div class="text-danger small">{{ form.fatura_fotografi.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-file me-1"></i>Ek Belge
+                    </label>
+                    {{ form.ek_belge }}
+                    <div class="form-text">PDF, Word, Excel dosyalarını yükleyebilirsiniz.</div>
+                    {% if form.ek_belge.errors %}
+                        <div class="text-danger small">{{ form.ek_belge.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tekrarlayan Gider -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-repeat me-2"></i>Tekrarlayan Gider Ayarları
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="form-check">
+                        {{ form.tekrarlayan }}
+                        <label class="form-check-label" for="{{ form.tekrarlayan.id_for_label }}">
+                            Bu gider tekrarlayan bir giderdir
+                        </label>
+                    </div>
+                    {% if form.tekrarlayan.errors %}
+                        <div class="text-danger small">{{ form.tekrarlayan.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3" id="tekrar-periyodu-container" style="display: none;">
+                    <div class="form-floating">
+                        {{ form.tekrar_periyodu }}
+                        <label for="{{ form.tekrar_periyodu.id_for_label }}">Tekrar Periyodu</label>
+                    </div>
+                    {% if form.tekrar_periyodu.errors %}
+                        <div class="text-danger small">{{ form.tekrar_periyodu.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Hataları -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Submit Buttons -->
+        <div class="form-section">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'gider:liste' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-1"></i>İptal
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Gideri Kaydet
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tekrarlayan gider checkbox'ı izle
+    const tekrarlayanCheckbox = document.getElementById('{{ form.tekrarlayan.id_for_label }}');
+    const periyotContainer = document.getElementById('tekrar-periyodu-container');
+    const periyotSelect = document.getElementById('{{ form.tekrar_periyodu.id_for_label }}');
+    
+    function togglePeriyot() {
+        if (tekrarlayanCheckbox.checked) {
+            periyotContainer.style.display = 'block';
+            periyotSelect.style.display = 'block';
+        } else {
+            periyotContainer.style.display = 'none';
+            periyotSelect.style.display = 'none';
+            periyotSelect.value = '';
+        }
+    }
+    
+    tekrarlayanCheckbox.addEventListener('change', togglePeriyot);
+    togglePeriyot(); // Sayfa yüklendiğinde kontrol et
+    
+    // Kategori seçimi değiştiğinde önizleme güncelle
+    const kategoriSelect = document.getElementById('{{ form.kategori.id_for_label }}');
+    const kategoriPreview = document.getElementById('kategori-preview');
+    
+    function updateKategoriPreview() {
+        const selectedOption = kategoriSelect.options[kategoriSelect.selectedIndex];
+        if (selectedOption.value) {
+            // Bu kısım backend'den kategori rengini almak için AJAX kullanabilir
+            // Şimdilik basit bir önizleme gösterelim
+            kategoriPreview.innerHTML = `
+                <span class="kategori-preview" style="background-color: #007bff; color: white;">
+                    <i class="fas fa-tag me-1"></i>${selectedOption.text}
+                </span>
+            `;
+        } else {
+            kategoriPreview.innerHTML = '';
+        }
+    }
+    
+    kategoriSelect.addEventListener('change', updateKategoriPreview);
+    updateKategoriPreview(); // Sayfa yüklendiğinde kontrol et
+    
+    // Tutar alanında otomatik formatla
+    const tutarInput = document.getElementById('{{ form.tutar.id_for_label }}');
+    tutarInput.addEventListener('blur', function() {
+        if (this.value) {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                this.value = value.toFixed(2);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

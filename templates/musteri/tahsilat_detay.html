@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tahsilat Detay - {{ tahsilat.tahsilat_no }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Print Optimized Format (80mm Thermal Printer) -->
+    <div class="print-format">
+        <!-- Receipt Header -->
+        <div class="print-header">
+            <div class="company-name">NUVİA OTOMASYON</div>
+            <div class="company-info">Stok ve Satış Yönetim Sistemi</div>
+            <div class="company-info">Tel: (0xxx) xxx xx xx</div>
+            <div class="receipt-title">TAHSİLAT FİŞİ</div>
+        </div>
+
+        <!-- Transaction Information -->
+        <div class="transaction-info">
+            <div class="info-row">
+                <span>Fiş No:</span>
+                <span>{{ tahsilat.tahsilat_no }}</span>
+            </div>
+            <div class="info-row">
+                <span>Tarih:</span>
+                <span>{{ tahsilat.tahsilat_tarihi|date:"d.m.Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span>Saat:</span>
+                <span>{{ tahsilat.tahsilat_tarihi|date:"H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span>Müşteri:</span>
+                <span>{{ tahsilat.musteri.tam_ad }}</span>
+            </div>
+            {% if tahsilat.musteri.telefon %}
+            <div class="info-row">
+                <span>Tel:</span>
+                <span>{{ tahsilat.musteri.telefon }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span>Tahsilat Eden:</span>
+                <span>{{ tahsilat.tahsilat_eden.get_full_name|default:tahsilat.tahsilat_eden.username }}</span>
+            </div>
+        </div>
+
+        <!-- Payment Details -->
+        <div style="margin: 5px 0; border-bottom: 1px dashed #000; padding-bottom: 5px;">
+            <div class="info-row">
+                <span>Ödeme Tipi:</span>
+                <span>{{ tahsilat.get_tahsilat_tipi_display }}</span>
+            </div>
+            
+            {% if tahsilat.tahsilat_tipi == 'cek' or tahsilat.tahsilat_tipi == 'senet' %}
+                {% if tahsilat.cek_senet_no %}
+                <div class="info-row">
+                    <span>{{ tahsilat.get_tahsilat_tipi_display }} No:</span>
+                    <span>{{ tahsilat.cek_senet_no }}</span>
+                </div>
+                {% endif %}
+                {% if tahsilat.banka %}
+                <div class="info-row">
+                    <span>Banka:</span>
+                    <span>{{ tahsilat.banka }}</span>
+                </div>
+                {% endif %}
+                {% if tahsilat.vade_tarihi %}
+                <div class="info-row">
+                    <span>Vade:</span>
+                    <span>{{ tahsilat.vade_tarihi|date:"d.m.Y" }}</span>
+                </div>
+                {% endif %}
+            {% endif %}
+            
+            {% if tahsilat.tahsilat_tipi == 'havale' and tahsilat.referans_no %}
+            <div class="info-row">
+                <span>Referans:</span>
+                <span>{{ tahsilat.referans_no }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Total Section -->
+        <div class="total-section">
+            <div class="grand-total">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>TAHSİL EDİLEN:</span>
+                    <span>{{ tahsilat.tutar|floatformat:2 }}₺</span>
+                </div>
+            </div>
+        </div>
+
+        {% if tahsilat.aciklama %}
+        <div style="margin: 5px 0; font-size: 10px; text-align: center;">
+            <strong>Not:</strong> {{ tahsilat.aciklama }}
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div>Bu fiş tahsilat yapıldığını gösterir.</div>
+            <div>{{ tahsilat.tahsilat_tarihi|date:"d.m.Y H:i" }}</div>
+            {% if tahsilat.durum == 'tahsil_edildi' %}
+            <div><strong>✓ TAHSİL EDİLDİ</strong></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Screen Format (Normal Web View) -->
+    <div class="screen-format">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Tahsilat Fiş -->
+            <div class="card" id="tahsilat-fis">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-receipt"></i> Tahsilat Fişi
+                    </h4>
+                    <div>
+                        <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-print"></i> Yazdır
+                        </button>
+                        {% if tahsilat.durum != 'iptal' %}
+                        <a href="{% url 'musteri:tahsilat_iptal' tahsilat.id %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-times"></i> İptal Et
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Firma Bilgileri</h5>
+                            <p class="mb-1"><strong>NuviaOtomasyon</strong></p>
+                            <p class="mb-1">Satış & Stok Yönetim Sistemi</p>
+                            <p class="mb-3">www.nuviaotomasyon.com</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h5>Tahsilat Bilgileri</h5>
+                            <p class="mb-1"><strong>Tahsilat No:</strong> {{ tahsilat.tahsilat_no }}</p>
+                            <p class="mb-1"><strong>Tarih:</strong> {{ tahsilat.tahsilat_tarihi|date:"d.m.Y H:i" }}</p>
+                            <p class="mb-1"><strong>Durum:</strong> 
+                                {% if tahsilat.durum == 'tahsil_edildi' %}
+                                    <span class="badge bg-success">Tahsil Edildi</span>
+                                {% elif tahsilat.durum == 'beklemede' %}
+                                    <span class="badge bg-warning">Beklemede</span>
+                                {% elif tahsilat.durum == 'iptal' %}
+                                    <span class="badge bg-danger">İptal</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Müşteri Bilgileri</h5>
+                            <p class="mb-1"><strong>{{ tahsilat.musteri.tam_ad }}</strong></p>
+                            <p class="mb-1">{{ tahsilat.musteri.telefon }}</p>
+                            {% if tahsilat.musteri.firma_adi %}
+                            <p class="mb-1">{{ tahsilat.musteri.firma_adi }}</p>
+                            {% endif %}
+                            {% if tahsilat.musteri.adres %}
+                            <p class="mb-1">{{ tahsilat.musteri.tam_adres }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Tahsilat Detayları</h5>
+                            <p class="mb-1"><strong>Tahsilat Tipi:</strong> {{ tahsilat.get_tahsilat_tipi_display }}</p>
+                            <p class="mb-1"><strong>Tutar:</strong> <span class="fs-4 text-success">{{ tahsilat.tutar|floatformat:2 }}₺</span></p>
+                            
+                            {% if tahsilat.tahsilat_tipi == 'cek' or tahsilat.tahsilat_tipi == 'senet' %}
+                                {% if tahsilat.cek_senet_no %}
+                                <p class="mb-1"><strong>{{ tahsilat.get_tahsilat_tipi_display }} No:</strong> {{ tahsilat.cek_senet_no }}</p>
+                                {% endif %}
+                                {% if tahsilat.banka %}
+                                <p class="mb-1"><strong>Banka:</strong> {{ tahsilat.banka }}</p>
+                                {% endif %}
+                                {% if tahsilat.vade_tarihi %}
+                                <p class="mb-1"><strong>Vade Tarihi:</strong> {{ tahsilat.vade_tarihi|date:"d.m.Y" }}</p>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if tahsilat.tahsilat_tipi == 'havale' and tahsilat.referans_no %}
+                            <p class="mb-1"><strong>Referans No:</strong> {{ tahsilat.referans_no }}</p>
+                            {% endif %}
+                            
+                            {% if tahsilat.tahsilat_eden %}
+                            <p class="mb-1"><strong>Tahsilat Eden:</strong> {{ tahsilat.tahsilat_eden.get_full_name|default:tahsilat.tahsilat_eden.username }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if tahsilat.aciklama %}
+                    <hr>
+                    <h5>Açıklama</h5>
+                    <p>{{ tahsilat.aciklama }}</p>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h3 class="text-success">Tahsil Edilen Tutar: {{ tahsilat.tutar|floatformat:2 }}₺</h3>
+                            <p class="text-muted">Bu fiş tahsilat yapıldığını gösterir.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">İşlemler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'musteri:borc_alacak_listesi' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Borç-Alacak Listesi
+                        </a>
+                        <a href="{% url 'musteri:musteri_borc_detay' tahsilat.musteri.id %}" class="btn btn-outline-info">
+                            <i class="fas fa-user"></i> Müşteri Detay
+                        </a>
+                        <a href="{% url 'musteri:tahsilat_listesi' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-receipt"></i> Tüm Tahsilatlar
+                        </a>
+                        {% if tahsilat.musteri.acik_hesap_bakiye > 0 %}
+                        <a href="{% url 'musteri:tahsilat_formu_musteri' tahsilat.musteri.id %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Yeni Tahsilat
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Müşteri Bakiye</h5>
+                </div>
+                <div class="card-body">
+                    {% if tahsilat.musteri.acik_hesap_bakiye > 0 %}
+                        <div class="alert alert-danger">
+                            <strong>Kalan Borç:</strong><br>
+                            <span class="fs-4">{{ tahsilat.musteri.acik_hesap_bakiye|floatformat:2 }}₺</span>
+                        </div>
+                    {% elif tahsilat.musteri.acik_hesap_bakiye < 0 %}
+                        <div class="alert alert-success">
+                            <strong>Alacak:</strong><br>
+                            <span class="fs-4">{{ tahsilat.musteri.acik_hesap_bakiye|floatformat:2|slice:"1:" }}₺</span>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <strong>Bakiye Sıfır</strong><br>
+                            <span class="fs-4">0₺</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- End screen-format -->
+</div>
+
+<style>
+/* 80mm Termal Yazıcı için Özel CSS - Satis Fişi ile Aynı Boyutlar */
+@page {
+    size: 80mm auto;
+    margin: 2mm;
+}
+
+@media print {
+    /* Print için genel ayarlar */
+    .card-header .btn,
+    .col-md-4,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    body {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.2;
+        margin: 0;
+        padding: 2mm;
+        width: 76mm;
+        color: #000;
+        background: #fff !important;
+    }
+    
+    .container-fluid {
+        width: 76mm;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .row, .col-md-8, .col-md-6, .col-md-12 {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        display: block;
+    }
+    
+    .card-body {
+        padding: 2mm;
+    }
+    
+    /* Header styles - Sales fişi gibi */
+    .print-header {
+        text-align: center;
+        border-bottom: 1px dashed #000;
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .company-name {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    
+    .company-info {
+        font-size: 10px;
+        margin-bottom: 1px;
+    }
+    
+    .receipt-title {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 5px 0;
+    }
+    
+    /* Info rows */
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+        font-size: 11px;
+    }
+    
+    .transaction-info {
+        margin: 5px 0;
+        border-bottom: 1px dashed #000;
+        padding-bottom: 5px;
+    }
+    
+    /* Total section */
+    .total-section {
+        border-top: 1px dashed #000;
+        padding-top: 5px;
+        margin-top: 5px;
+        text-align: center;
+    }
+    
+    .grand-total {
+        font-weight: bold;
+        font-size: 13px;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 3px 0;
+        margin: 3px 0;
+    }
+    
+    .footer {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 10px;
+        border-top: 1px dashed #000;
+        padding-top: 5px;
+    }
+    
+    /* Hide non-essential elements for thermal print */
+    h5, h3 {
+        font-size: 12px;
+        margin: 5px 0 2px 0;
+    }
+    
+    p {
+        margin: 1px 0;
+        font-size: 11px;
+    }
+    
+    .text-success, .fs-4 {
+        font-size: 13px !important;
+        font-weight: bold;
+    }
+}
+
+/* Normal ekran görünümü */
+@media screen {
+    .print-format {
+        display: none;
+    }
+}
+
+@media print {
+    .screen-format {
+        display: none;
+    }
+    .print-format {
+        display: block;
+    }
+}
+</style>
+{% endblock %}

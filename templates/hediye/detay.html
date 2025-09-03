@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ hediye_ceki.kod }} - Hediye Çeki Detayı{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hediye-cek-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hediye-cek-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+    
+    .hediye-cek-card .cek-kod {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .durum-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .durum-aktif { border-left: 5px solid #28a745; }
+    .durum-kullanilmis { border-left: 5px solid #6c757d; }
+    .durum-iptal { border-left: 5px solid #dc3545; }
+    .durum-suresi_dolmus { border-left: 5px solid #fd7e14; }
+    
+    .kullanim-item {
+        border-left: 3px solid #007bff;
+        padding-left: 15px;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 10px 10px 0;
+        padding: 1rem 1rem 1rem 15px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: -20px;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 8px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #007bff;
+    }
+    
+    .timeline-item:last-child::before {
+        display: none;
+    }
+    
+    .stat-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+    
+    .stat-box .value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .stat-box .label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .qr-placeholder {
+        width: 150px;
+        height: 150px;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Geri Dön Butonu -->
+    <div class="mb-3">
+        <a href="{% url 'hediye:liste' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Geri Dön
+        </a>
+    </div>
+
+    <!-- Hediye Çeki Kartı -->
+    <div class="hediye-cek-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="cek-kod mb-2">{{ hediye_ceki.kod }}</div>
+                <h4 class="mb-3">
+                    {% if hediye_ceki.musteri %}
+                        {{ hediye_ceki.musteri.ad }} {{ hediye_ceki.musteri.soyad }}
+                    {% else %}
+                        Bireysel Müşteri
+                    {% endif %}
+                </h4>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h3 class="mb-1">{{ hediye_ceki.kalan_tutar|floatformat:2 }} ₺</h3>
+                        <p class="mb-0 opacity-75">
+                            {% if hediye_ceki.kalan_tutar != hediye_ceki.tutar %}
+                                Başlangıç: {{ hediye_ceki.tutar|floatformat:2 }} ₺
+                            {% else %}
+                                Mevcut Bakiye
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                            {{ hediye_ceki.get_durum_display }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="qr-placeholder mx-auto">
+                    <div>
+                        <i class="fas fa-qrcode fa-2x mb-2"></i><br>
+                        QR Kod
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sol Panel - Genel Bilgiler -->
+        <div class="col-lg-8">
+            <!-- Durum Bilgisi -->
+            <div class="card durum-card durum-{{ hediye_ceki.durum }} mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="card-title">
+                                <i class="fas fa-info-circle me-2"></i>Genel Bilgiler
+                            </h6>
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold" width="120">Durum:</td>
+                                    <td>{{ hediye_ceki.get_durum_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Oluşturma:</td>
+                                    <td>{{ hediye_ceki.olusturma_tarihi|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Geçerlilik:</td>
+                                    <td>
+                                        {{ hediye_ceki.gecerlilik_tarihi|date:"d.m.Y" }}
+                                        {% if hediye_ceki.gecerlilik_tarihi < today %}
+                                            <span class="badge bg-warning">Süresi Dolmuş</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if hediye_ceki.iptal_tarihi %}
+                                <tr>
+                                    <td class="fw-bold">İptal Tarihi:</td>
+                                    <td>{{ hediye_ceki.iptal_tarihi|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="card-title">
+                                <i class="fas fa-user me-2"></i>Müşteri Bilgisi
+                            </h6>
+                            {% if hediye_ceki.musteri %}
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr>
+                                        <td class="fw-bold" width="120">Ad Soyad:</td>
+                                        <td>{{ hediye_ceki.musteri.ad }} {{ hediye_ceki.musteri.soyad }}</td>
+                                    </tr>
+                                    {% if hediye_ceki.musteri.telefon %}
+                                    <tr>
+                                        <td class="fw-bold">Telefon:</td>
+                                        <td>{{ hediye_ceki.musteri.telefon }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if hediye_ceki.musteri.email %}
+                                    <tr>
+                                        <td class="fw-bold">E-posta:</td>
+                                        <td>{{ hediye_ceki.musteri.email }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            {% else %}
+                                <p class="text-muted mb-0">Bireysel müşteri - kayıtlı müşteri bilgisi yok</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if hediye_ceki.aciklama %}
+                    <hr>
+                    <div>
+                        <h6><i class="fas fa-comment me-2"></i>Açıklama</h6>
+                        <p class="mb-0">{{ hediye_ceki.aciklama }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Kullanım Geçmişi -->
+            {% if kullanim_gecmisi %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Kullanım Geçmişi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for kullanim in kullanim_gecmisi %}
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ kullanim.kullanilan_tutar|floatformat:2 }} ₺ kullanıldı</h6>
+                                <p class="text-muted mb-1">
+                                    {{ kullanim.kullanim_tarihi|date:"d.m.Y H:i" }}
+                                </p>
+                                {% if kullanim.aciklama %}
+                                <small class="text-muted">{{ kullanim.aciklama }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">Kalan: {{ kullanim.kalan_tutar|floatformat:2 }} ₺</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sağ Panel - İstatistikler ve İşlemler -->
+        <div class="col-lg-4">
+            <!-- İstatistikler -->
+            <div class="row mb-4">
+                <div class="col-6">
+                    <div class="stat-box">
+                        <div class="value text-success">{{ hediye_ceki.kalan_tutar|floatformat:2 }}</div>
+                        <div class="label">Kalan Tutar (₺)</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        <div class="value text-primary">{{ kullanim_sayisi }}</div>
+                        <div class="label">Kullanım Sayısı</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        <div class="value text-info">{{ hediye_ceki.tutar|floatformat:2 }}</div>
+                        <div class="label">Toplam Tutar (₺)</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        <div class="value text-warning">{{ kullanilan_tutar|floatformat:2 }}</div>
+                        <div class="label">Kullanılan (₺)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İşlemler -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>İşlemler
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if hediye_ceki.durum == 'aktif' and hediye_ceki.kalan_tutar == hediye_ceki.tutar %}
+                    <a href="{% url 'hediye:iptal' hediye_ceki.pk %}" class="btn btn-outline-danger btn-sm w-100 mb-2">
+                        <i class="fas fa-times me-2"></i>Hediye Çekini İptal Et
+                    </a>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Yazdır
+                    </button>
+                    
+                    <button class="btn btn-outline-info btn-sm w-100" onclick="copyToClipboard('{{ hediye_ceki.kod }}')">
+                        <i class="fas fa-copy me-2"></i>Kodu Kopyala
+                    </button>
+                </div>
+            </div>
+
+            <!-- Geçerlilik Durumu -->
+            <div class="card mt-3">
+                <div class="card-body text-center">
+                    {% if hediye_ceki.durum == 'aktif' %}
+                        {% if hediye_ceki.gecerlilik_tarihi >= today %}
+                            <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                            <h6 class="text-success">Aktif Hediye Çeki</h6>
+                            <p class="text-muted small mb-0">
+                                {{ hediye_ceki.gecerlilik_tarihi|timeuntil }} sonra süresi dolacak
+                            </p>
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                            <h6 class="text-warning">Süresi Dolmuş</h6>
+                            <p class="text-muted small mb-0">
+                                {{ hediye_ceki.gecerlilik_tarihi|timesince }} önce süresi dolmuş
+                            </p>
+                        {% endif %}
+                    {% elif hediye_ceki.durum == 'kullanilmis' %}
+                        <i class="fas fa-shopping-cart text-secondary fa-2x mb-2"></i>
+                        <h6 class="text-secondary">Tamamen Kullanılmış</h6>
+                    {% elif hediye_ceki.durum == 'iptal' %}
+                        <i class="fas fa-times-circle text-danger fa-2x mb-2"></i>
+                        <h6 class="text-danger">İptal Edilmiş</h6>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Bootstrap toast gösterimi için
+        const toastElement = document.createElement('div');
+        toastElement.className = 'position-fixed top-0 end-0 p-3';
+        toastElement.style.zIndex = '1055';
+        toastElement.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header">
+                    <strong class="me-auto">Başarılı</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    Hediye çeki kodu kopyalandı: ${text}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toastElement);
+        
+        // 3 saniye sonra toast'ı kaldır
+        setTimeout(() => {
+            document.body.removeChild(toastElement);
+        }, 3000);
+    });
+}
+</script>
+{% endblock %}

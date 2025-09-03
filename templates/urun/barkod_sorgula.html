@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Barkod Sorgula{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4><i class="fas fa-barcode"></i> Barkod Sorgula</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Barkod Arama Formu -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-barcode"></i>
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg" 
+                                           name="barkod" value="{{ barkod|default:'' }}" 
+                                           placeholder="Barkod okutun veya yazın..." 
+                                           autofocus autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search"></i> Sorgula
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Sonuçlar -->
+                    {% if barkod %}
+                        {% if urun %}
+                            <!-- Ürün Bulundu -->
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-check-circle"></i> Ürün Bulundu!</h5>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    {% if urun.resim %}
+                                        <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}" 
+                                             class="img-fluid rounded shadow">
+                                    {% else %}
+                                        <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" 
+                                             style="height: 300px;">
+                                            <i class="fas fa-image fa-5x text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5><i class="fas fa-info-circle"></i> Ürün Bilgileri</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-borderless">
+                                                <tr>
+                                                    <td width="30%"><strong>Ürün Adı:</strong></td>
+                                                    <td>{{ urun.ad }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Barkod:</strong></td>
+                                                    <td><code>{{ urun.barkod }}</code></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>SKU:</strong></td>
+                                                    <td><code>{{ urun.sku }}</code></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Kategori:</strong></td>
+                                                    <td>
+                                                        <span class="badge bg-info">
+                                                            {{ urun.kategori.ust_kategori.ad }} - {{ urun.kategori.ad }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% if urun.marka %}
+                                                <tr>
+                                                    <td><strong>Marka:</strong></td>
+                                                    <td>
+                                                        <span class="badge bg-secondary">{{ urun.marka.ad }}</span>
+                                                    </td>
+                                                </tr>
+                                                {% endif %}
+                                                <tr>
+                                                    <td><strong>Satış Fiyatı:</strong></td>
+                                                    <td>
+                                                        <h5 class="text-success mb-0">{{ urun.satis_fiyati|floatformat:2 }} ₺</h5>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Stok Durumu:</strong></td>
+                                                    <td>
+                                                        {% if urun.stok_miktari > 0 %}
+                                                            <span class="badge bg-success fs-6">
+                                                                {{ urun.stok_miktari }} adet stokta
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger fs-6">Stokta yok</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% if urun.aciklama %}
+                                                <tr>
+                                                    <td><strong>Açıklama:</strong></td>
+                                                    <td>{{ urun.aciklama }}</td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="btn-group w-100">
+                                                <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-warning">
+                                                    <i class="fas fa-edit"></i> Düzenle
+                                                </a>
+                                                <a href="{% url 'satis:ekrani' %}?barkod={{ urun.barkod }}" class="btn btn-success">
+                                                    <i class="fas fa-shopping-cart"></i> Satış Ekranına Ekle
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Ürün Bulunamadı -->
+                            <div class="alert alert-warning">
+                                <h5><i class="fas fa-exclamation-triangle"></i> Ürün Bulunamadı!</h5>
+                                <p>{{ barkod }} barkoduna ait ürün sistemde kayıtlı değil.</p>
+                                <hr>
+                                <a href="{% url 'urun:ekle' %}?barkod={{ barkod }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Bu Barkod ile Yeni Ürün Ekle
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <!-- İlk Durum -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-barcode fa-5x text-muted mb-3"></i>
+                            <h4 class="text-muted">Barkod okutun veya yazın</h4>
+                            <p class="text-muted">Ürün bilgilerini görüntülemek için yukarıdaki alana barkod girin.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Barkod input'una odaklan
+    const barkodInput = document.querySelector('input[name="barkod"]');
+    if (barkodInput) {
+        barkodInput.focus();
+        
+        // Enter tuşu ile otomatik arama
+        barkodInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                this.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Günlük Rapor - {{ secili_tarih|date:"d.m.Y" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .stat-card.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .stat-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .stat-card.danger {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    .payment-method {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+    .payment-method.nakit {
+        border-left-color: #28a745;
+    }
+    .payment-method.kart {
+        border-left-color: #007bff;
+    }
+    .payment-method.hediye_ceki {
+        border-left-color: #ffc107;
+    }
+    .payment-method.acik_hesap {
+        border-left-color: #dc3545;
+    }
+    .expense-category {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .date-selector {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Başlık ve Tarih Seçici -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="date-selector">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h2><i class="fas fa-chart-line"></i> Günlük Rapor</h2>
+                        <p class="text-muted mb-0">{{ secili_tarih|date:"l, d F Y" }} raporu</p>
+                    </div>
+                    <div class="col-md-6">
+                        <form method="get" class="d-flex justify-content-end">
+                            <div class="input-group" style="max-width: 400px;">
+                                <input type="date" class="form-control" name="tarih" 
+                                       value="{{ secili_tarih|date:'Y-m-d' }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Görüntüle
+                                </button>
+                                <a href="{% url 'gunluk_rapor_pdf' %}?tarih={{ secili_tarih|date:'Y-m-d' }}" 
+                                   class="btn btn-danger" target="_blank">
+                                    <i class="fas fa-file-pdf"></i> PDF İndir
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genel Özet Kartları -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card success">
+                <div class="stat-number">{{ satis_ozeti.toplam_satis_tutari|turkish_currency }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-shopping-cart"></i> Toplam Satış
+                    <br><small>{{ satis_ozeti.toplam_satis_sayisi }} işlem</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card info">
+                <div class="stat-number">{{ toplam_tahsilat|turkish_currency }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-money-bill-wave"></i> Toplam Tahsilat
+                    <br><small>Tüm ödeme şekilleri</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card warning">
+                <div class="stat-number">{{ gider_ozeti.toplam_gider_tutari|turkish_currency }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-credit-card"></i> Toplam Gider
+                    <br><small>{{ gider_ozeti.toplam_gider_sayisi }} kalem</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card {% if brut_kar >= 0 %}success{% else %}danger{% endif %}">
+                <div class="stat-number">{{ brut_kar|turkish_currency }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-chart-profit"></i> Brüt Kar/Zarar
+                    <br><small>Satış - Gider</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tahsilat Detayları -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-credit-card"></i> Tahsilat Detayları</h5>
+                </div>
+                <div class="card-body">
+                    {% if tahsilat_ozeti %}
+                        {% for odeme in tahsilat_ozeti %}
+                            <div class="payment-method {{ odeme.odeme_tipi }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ odeme.display_name }}</strong>
+                                        <br><small class="text-muted">{{ odeme.islem_sayisi }} işlem</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h5 class="mb-0">{{ odeme.toplam_tutar|turkish_currency }}</h5>
+                                        <small class="text-muted">
+                                            {% widthratio odeme.toplam_tutar toplam_tahsilat 100 %}%
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Bu tarihte tahsilat yapılmamış.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Gider Detayları -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5><i class="fas fa-receipt"></i> Gider Kategorileri</h5>
+                </div>
+                <div class="card-body">
+                    {% if gider_kategoriler %}
+                        {% for kategori in gider_kategoriler %}
+                            <div class="expense-category">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ kategori.kategori__ad|default:"Kategori Belirtilmemiş" }}</strong>
+                                        <br><small class="text-muted">{{ kategori.gider_sayisi }} kalem</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-0">{{ kategori.toplam_tutar|turkish_currency }}</h6>
+                                        <small class="text-muted">
+                                            {% widthratio kategori.toplam_tutar gider_ozeti.toplam_gider_tutari 100 %}%
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Bu tarihte gider kaydı yapılmamış.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- En Çok Satan Ürünler ve Son Satışlar -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-star"></i> En Çok Satan Ürünler</h5>
+                </div>
+                <div class="card-body">
+                    {% if cok_satan_urunler %}
+                        {% for item in cok_satan_urunler %}
+                            {% if item.urun %}
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                                    <div>
+                                        <strong>{{ item.urun.ad }}</strong>
+                                        <br><small class="text-muted">{{ item.toplam_miktar }} adet</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-0">{{ item.toplam_ciro|turkish_currency }}</h6>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Bu tarihte ürün satışı yapılmamış.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-clock"></i> Son Satışlar</h5>
+                </div>
+                <div class="card-body">
+                    {% if son_satislar %}
+                        {% for satis in son_satislar %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                                <div>
+                                    <strong>{{ satis.siparis_no }}</strong>
+                                    <br><small class="text-muted">{{ satis.satis_tarihi|date:"H:i" }}</small>
+                                    {% if satis.musteri %}
+                                        <br><small class="text-muted">{{ satis.musteri.ad }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="mb-0">{{ satis.toplam_tutar|turkish_currency }}</h6>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Bu tarihte satış yapılmamış.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ek Bilgiler -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-calculator"></i> Ek Bilgiler</h5>
+                        <a href="{% url 'gunluk_rapor_pdf' %}?tarih={{ secili_tarih|date:'Y-m-d' }}" 
+                           class="btn btn-light btn-sm" target="_blank">
+                            <i class="fas fa-download"></i> PDF İndir
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ satis_ozeti.ortalama_sepet|floatformat:2 }} ₺</h4>
+                                <p class="text-muted">Ortalama Sepet Tutarı</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ satis_ozeti.toplam_satis_sayisi }}</h4>
+                                <p class="text-muted">Toplam İşlem Sayısı</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-warning">{{ gider_ozeti.toplam_gider_sayisi }}</h4>
+                                <p class="text-muted">Toplam Gider Kalemi</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                {% if brut_kar >= 0 %}
+                                    <h4 class="text-success">
+                                        {% if satis_ozeti.toplam_satis_tutari > 0 %}
+                                            {% widthratio brut_kar satis_ozeti.toplam_satis_tutari 100 %}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-muted">Kar Marjı</p>
+                                {% else %}
+                                    <h4 class="text-danger">Zarar</h4>
+                                    <p class="text-muted">Kar Marjı</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Tarihin geçmiş tarih olup olmadığını kontrol et
+    const selectedDate = new Date('{{ secili_tarih|date:"Y-m-d" }}');
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    if (selectedDate.getTime() === today.getTime()) {
+        // Bugünkü rapor için otomatik yenileme (30 saniye)
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    }
+});
+</script>
+{% endblock %}
