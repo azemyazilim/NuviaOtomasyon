@@ -1,6 +1,10 @@
 # Production settings for Django POS System
 import os
+from pathlib import Path
 from decouple import config
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='your-secret-key-here')
@@ -12,6 +16,9 @@ ALLOWED_HOSTS = [
     'yourdomain.com',
     'www.yourdomain.com',
     'your-server-ip',
+    '.railway.app',  # Railway domain support
+    'localhost',
+    '127.0.0.1',
 ]
 
 # Database for production
