@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_l8=*rmi(*guvey5ndw6rqux34#=r9s4^=qaa-xh7s=-y6@x01'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-_l8=*rmi(*guvey5ndw6rqux34#=r9s4^=qaa-xh7s=-y6@x01')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'nuviaotomasyon-production.up.railway.app',
+    'localhost',
+    '127.0.0.1',
+    '.railway.app',  # Railway subdomains
+]
+
+# Environment variable support for additional hosts
+if 'RAILWAY_STATIC_URL' in os.environ:
+    # Railway deployment detected
+    ALLOWED_HOSTS.append(os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', ''))
+
+# Add any additional hosts from environment
+additional_hosts = os.environ.get('ADDITIONAL_HOSTS', '')
+if additional_hosts:
+    ALLOWED_HOSTS.extend([host.strip() for host in additional_hosts.split(',')])
 
 
 # Application definition
