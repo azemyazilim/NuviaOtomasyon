@@ -43,6 +43,20 @@ additional_hosts = os.environ.get('ADDITIONAL_HOSTS', '')
 if additional_hosts:
     ALLOWED_HOSTS.extend([host.strip() for host in additional_hosts.split(',')])
 
+# CSRF trusted origins for production
+CSRF_TRUSTED_ORIGINS = [
+    'https://nuviaotomasyon-production.up.railway.app',
+    'https://*.railway.app',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+# Environment variable support for additional CSRF origins
+if 'RAILWAY_STATIC_URL' in os.environ:
+    railway_url = os.environ.get('RAILWAY_STATIC_URL', '')
+    if railway_url and railway_url not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(railway_url)
+
 
 # Application definition
 
@@ -196,3 +210,26 @@ if DEBUG:
                     'django.template.loaders.filesystem.Loader',
                     'django.template.loaders.app_directories.Loader',
                 ]
+
+
+# CSRF Security Settings
+CSRF_COOKIE_SECURE = not DEBUG  # Production'da HTTPS üzerinden gönder
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = 'csrftoken'
+
+# Session Security Settings
+SESSION_COOKIE_SECURE = not DEBUG  # Production'da HTTPS üzerinden gönder
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 3600  # 1 saat
+
+# Security Headers (Production için)
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000  # 1 yıl
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
