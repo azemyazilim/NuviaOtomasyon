@@ -48,6 +48,12 @@ Modern, kapsamlı ve kullanıcı dostu **Stok ve Satış Takip Sistemi**. Django
 - ✅ Günlük satış raporu
 - ✅ Stok durumu raporu
 - ✅ En çok satan ürünler raporu
+
+### 💾 Yedekleme Sistemi
+- ✅ Otomatik Git commit tabanlı yedekleme
+- ✅ Dosya tabanlı zip arşivi yedekleme
+- ✅ Eski yedeklerin otomatik temizlenmesi
+- ✅ Kolay geri yükleme sistemi
 - ✅ Kâr/Zarar analizi
 - ✅ Minimum stok uyarısı
 - ✅ Excel ve PDF export desteği
@@ -260,7 +266,64 @@ python manage.py collectstatic
 python manage.py runserver 8001
 ```
 
-## 📄 Lisans
+## � Yedekleme Sistemi
+
+Proje, hem Git tabanlı hem de dosya tabanlı yedekleme sistemi içerir.
+
+### Hızlı Kullanım
+
+```powershell
+# Hızlı backup (Git + dosya)
+.\backup.ps1 quick
+
+# Mesajlı backup
+.\backup.ps1 create "Önemli değişiklikler"
+
+# Backup'ları listele
+.\backup.ps1 list
+```
+
+### Detaylı Komutlar
+
+```powershell
+# Python script ile kullanım
+py backup.py create [mesaj]           # Her iki yedekleme türü
+py backup.py git [mesaj]              # Sadece Git commit
+py backup.py file                     # Sadece dosya backup
+py backup.py list                     # Backup'ları listele
+py backup.py restore <dosya_adı>      # Dosya backup'ından geri yükle
+
+# PowerShell script ile kullanım
+.\backup.ps1 create [mesaj]           # Her iki yedekleme türü
+.\backup.ps1 quick [mesaj]            # Hızlı backup
+.\backup.ps1 git [mesaj]              # Sadece Git commit
+.\backup.ps1 file                     # Sadece dosya backup
+.\backup.ps1 list                     # Backup'ları listele
+.\backup.ps1 restore <dosya_adı>      # Dosya backup'ından geri yükle
+```
+
+### Backup Türleri
+
+1. **Git Backup**: Değişiklikleri Git commit'i olarak saklar
+2. **Dosya Backup**: Projeyi ZIP arşivi olarak `backups/` klasörüne kaydeder
+
+### Örnekler
+
+```powershell
+# Günlük backup
+.\backup.ps1 quick "Günlük yedekleme"
+
+# Önemli değişiklik öncesi
+.\backup.ps1 create "Veritabanı güncelleme öncesi"
+
+# Mevcut backup'ları görüntüle
+.\backup.ps1 list
+
+# Geri yükleme
+.\backup.ps1 restore nuvia_backup_20250904_200929.zip
+```
+
+## �📄 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır.
 

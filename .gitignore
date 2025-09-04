@@ -154,3 +154,8 @@ start_dev.bat
 *.swp
 *.swo
 *~
+
+# Backup files (only for file backups, git backups are tracked)
+backups/
+*.backup
+*.bak
