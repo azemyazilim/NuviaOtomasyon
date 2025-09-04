@@ -54,8 +54,12 @@ CSRF_TRUSTED_ORIGINS = [
 # Environment variable support for additional CSRF origins
 if 'RAILWAY_STATIC_URL' in os.environ:
     railway_url = os.environ.get('RAILWAY_STATIC_URL', '')
-    if railway_url and railway_url not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(railway_url)
+    if railway_url:
+        # Ensure the URL has a scheme for CSRF_TRUSTED_ORIGINS
+        if not railway_url.startswith(('http://', 'https://')):
+            railway_url = 'https://' + railway_url
+        if railway_url not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(railway_url)
 
 
 # Application definition
