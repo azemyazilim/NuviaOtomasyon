@@ -3,9 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import Q, F, Count
+from django.db.models import Q, F, Count, Sum
 from decimal import Decimal, InvalidOperation
-from .models import Urun, UrunKategoriUst, Varyasyon, Marka
+from .models import Urun, UrunKategoriUst, Varyasyon, Marka, UrunVaryanti
 from log.models import AktiviteLog
 
 
@@ -108,21 +108,24 @@ def urun_ekle(request):
             # Form verilerini al ve validate et
             ad = request.POST.get('ad', '').strip()
             kategori_id = request.POST.get('kategori')
-            marka_id = request.POST.get('marka')  # Marka alanını ekle
-            barkod = request.POST.get('barkod', '').strip()
+            marka_id = request.POST.get('marka')
             sku = request.POST.get('sku', '').strip()
-            aciklama = ''  # Açıklama alanı kaldırıldı
-            alis_fiyati = request.POST.get('alis_fiyati', '').strip()
-            satis_fiyati = request.POST.get('satis_fiyati', '').strip()
-            stok_miktari = request.POST.get('stok_miktari', '0').strip()
-            if not stok_miktari:
-                stok_miktari = '0'  # Boşsa 0 yap
-            kritik_stok = request.POST.get('kritik_stok', '').strip()
-            birim = request.POST.get('birim', '').strip()
+            aciklama = request.POST.get('aciklama', '').strip()
+            cinsiyet = request.POST.get('cinsiyet', 'kadin').strip()
+            birim = request.POST.get('birim', 'adet').strip()
+            varyasyonlu = request.POST.get('varyasyonlu') == 'on'
+            varyasyon_tipleri = request.POST.getlist('varyasyon_tipleri')
+            
+            # Varyasyonsuz ürünler için fiyat ve stok bilgileri
+            temel_alis_fiyati = request.POST.get('temel_alis_fiyati', '').strip()
+            temel_kar_orani = request.POST.get('temel_kar_orani', '').strip()
+            temel_satis_fiyati = request.POST.get('temel_satis_fiyati', '').strip()
+            temel_stok_miktari = request.POST.get('temel_stok_miktari', '0').strip()
+            kritik_stok_seviyesi = request.POST.get('kritik_stok_seviyesi', '5').strip()
+            
             resim = request.FILES.get('resim')
             aktif = request.POST.get('aktif') == 'on'
             stok_takibi = request.POST.get('stok_takibi') == 'on'
-            cinsiyet = request.POST.get('cinsiyet', 'kadin').strip()
             
             # Zorunlu alanları kontrol et
             if not ad:
@@ -132,10 +135,6 @@ def urun_ekle(request):
             if not kategori_id:
                 messages.error(request, 'Kategori seçimi zorunludur.')
                 raise ValueError('Kategori seçilmemiş')
-                
-            if not satis_fiyati:
-                messages.error(request, 'Satış fiyatı zorunludur.')
-                raise ValueError('Satış fiyatı boş')
                 
             if not birim:
                 messages.error(request, 'Birim seçimi zorunludur.')
@@ -157,86 +156,88 @@ def urun_ekle(request):
                     messages.error(request, 'Geçersiz marka seçimi.')
                     raise ValueError('Geçersiz marka')
             
-            # Barkod benzersizlik kontrolü
-            if barkod and Urun.objects.filter(barkod=barkod).exists():
-                messages.error(request, 'Bu barkod zaten kullanılıyor.')
-                raise ValueError('Barkod mevcut')
-            
-            # Fiyat kontrolü
-            try:
-                satis_fiyati_decimal = Decimal(satis_fiyati)
-                if satis_fiyati_decimal <= 0:
-                    messages.error(request, 'Satış fiyatı 0\'dan büyük olmalıdır.')
-                    raise ValueError('Geçersiz satış fiyatı')
-            except (ValueError, InvalidOperation):
-                messages.error(request, 'Geçersiz satış fiyatı formatı.')
-                raise ValueError('Geçersiz fiyat formatı')
-            
-            alis_fiyati_decimal = None
-            if alis_fiyati:
+            # Varyasyonsuz ürünler için fiyat kontrolü
+            if not varyasyonlu:
+                if not temel_satis_fiyati:
+                    messages.error(request, 'Varyasyonsuz ürünler için satış fiyatı zorunludur.')
+                    raise ValueError('Satış fiyatı boş')
+                
                 try:
-                    alis_fiyati_decimal = Decimal(alis_fiyati)
-                    if alis_fiyati_decimal < 0:
-                        messages.error(request, 'Alış fiyatı negatif olamaz.')
-                        raise ValueError('Negatif alış fiyatı')
+                    temel_satis_fiyati_decimal = Decimal(temel_satis_fiyati)
+                    if temel_satis_fiyati_decimal <= 0:
+                        messages.error(request, 'Satış fiyatı 0\'dan büyük olmalıdır.')
+                        raise ValueError('Geçersiz satış fiyatı')
                 except (ValueError, InvalidOperation):
-                    messages.error(request, 'Geçersiz alış fiyatı formatı.')
-                    raise ValueError('Geçersiz alış fiyatı formatı')
-            
-            # Stok kontrolü
-            try:
-                stok_miktari_int = int(stok_miktari)
-                if stok_miktari_int < 0:
-                    messages.error(request, 'Stok miktarı negatif olamaz.')
-                    raise ValueError('Negatif stok')
-            except ValueError:
-                messages.error(request, 'Geçersiz stok miktarı formatı.')
-                raise ValueError('Geçersiz stok formatı')
-            
-            kritik_stok_int = 0
-            if kritik_stok:
+                    messages.error(request, 'Geçersiz satış fiyatı formatı.')
+                    raise ValueError('Geçersiz fiyat formatı')
+                
+                temel_alis_fiyati_decimal = None
+                if temel_alis_fiyati:
+                    try:
+                        temel_alis_fiyati_decimal = Decimal(temel_alis_fiyati)
+                        if temel_alis_fiyati_decimal < 0:
+                            messages.error(request, 'Alış fiyatı negatif olamaz.')
+                            raise ValueError('Negatif alış fiyatı')
+                    except (ValueError, InvalidOperation):
+                        messages.error(request, 'Geçersiz alış fiyatı formatı.')
+                        raise ValueError('Geçersiz alış fiyatı formatı')
+                
                 try:
-                    kritik_stok_int = int(kritik_stok)
-                    if kritik_stok_int < 0:
-                        messages.error(request, 'Kritik stok seviyesi negatif olamaz.')
-                        raise ValueError('Negatif kritik stok')
-                except ValueError:
-                    messages.error(request, 'Geçersiz kritik stok formatı.')
-                    raise ValueError('Geçersiz kritik stok formatı')
-            
-            # Kar marjını hesapla
-            kar_marji = 0
-            if alis_fiyati_decimal and satis_fiyati_decimal and alis_fiyati_decimal > 0:
-                kar_marji = float(((satis_fiyati_decimal - alis_fiyati_decimal) / alis_fiyati_decimal) * 100)
+                    temel_kar_orani_decimal = Decimal(temel_kar_orani) if temel_kar_orani else Decimal('50')
+                    temel_stok_miktari_int = int(temel_stok_miktari) if temel_stok_miktari else 0
+                    kritik_stok_seviyesi_int = int(kritik_stok_seviyesi) if kritik_stok_seviyesi else 5
+                except (ValueError, InvalidOperation):
+                    messages.error(request, 'Geçersiz sayısal değer.')
+                    raise ValueError('Geçersiz sayısal değer')
+            else:
+                # Varyasyonlu ürünler için default değerler
+                temel_alis_fiyati_decimal = None
+                temel_kar_orani_decimal = Decimal('50')
+                temel_satis_fiyati_decimal = None
+                temel_stok_miktari_int = 0
+                kritik_stok_seviyesi_int = 5
             
             # Ürün oluştur
             urun = Urun.objects.create(
+                sku=sku if sku else None,  # Model'de otomatik oluşturulacak
                 ad=ad,
-                barkod=barkod if barkod else None,
-                sku=sku if sku else f'SKU{Urun.objects.count() + 1:05d}',
-                kategori=kategori,
-                marka=marka,  # Marka alanını ekle
-                alis_fiyati=alis_fiyati_decimal or Decimal('0'),
-                kar_marji=kar_marji,
-                satis_fiyati=satis_fiyati_decimal,  # Eksik olan field!
-                stok_miktari=stok_miktari_int,
-                minimum_stok=kritik_stok_int,  # Bu da eksikti
                 aciklama=aciklama,
+                kategori=kategori,
+                marka=marka,
                 cinsiyet=cinsiyet,
+                birim=birim,
+                varyasyonlu=varyasyonlu,
+                temel_alis_fiyati=temel_alis_fiyati_decimal,
+                temel_kar_orani=temel_kar_orani_decimal,
+                temel_satis_fiyati=temel_satis_fiyati_decimal,
+                temel_stok_miktari=temel_stok_miktari_int,
+                kritik_stok_seviyesi=kritik_stok_seviyesi_int,
+                resim=resim,
+                aktif=aktif,
+                stok_takibi=stok_takibi,
                 olusturan=request.user
             )
+            
+            # Varyasyon tiplerini ekle
+            if varyasyonlu and varyasyon_tipleri:
+                varyasyon_objeleri = Varyasyon.objects.filter(id__in=varyasyon_tipleri)
+                urun.varyasyon_tipleri.set(varyasyon_objeleri)
             
             # Aktivite logu
             AktiviteLog.objects.create(
                 kullanici=request.user,
                 aktivite_tipi='ekleme',
                 baslik='Ürün Eklendi',
-                aciklama=f'{urun.ad} ürünü eklendi (Stok: {stok_miktari_int} {birim})',
+                aciklama=f'{urun.ad} ürünü eklendi ({"Varyasyonlu" if varyasyonlu else "Standart"})',
                 content_object=urun
             )
             
-            messages.success(request, f'✅ {urun.ad} ürünü başarıyla eklendi!')
-            return redirect('urun:liste')
+            if varyasyonlu:
+                messages.success(request, f'✅ {urun.ad} ürünü başarıyla eklendi! Şimdi varyantları ekleyebilirsiniz.')
+                return redirect('urun:varyant_yonet', urun_id=urun.id)
+            else:
+                messages.success(request, f'✅ {urun.ad} ürünü başarıyla eklendi!')
+                return redirect('urun:liste')
             
         except ValueError:
             # Hata mesajları zaten set edildi
@@ -246,7 +247,7 @@ def urun_ekle(request):
     
     # Kategorileri getir
     ust_kategoriler = UrunKategoriUst.objects.all().order_by('ad')
-    varyasyonlar = Varyasyon.objects.all()
+    varyasyonlar = Varyasyon.objects.filter(aktif=True).order_by('tip', 'sira', 'deger')
     markalar = Marka.objects.filter(aktif=True).order_by('ad')
     
     # Eğer kategori yoksa uyarı ver
@@ -259,10 +260,10 @@ def urun_ekle(request):
     context = {
         'ust_kategoriler': ust_kategoriler,
         'varyasyonlar': varyasyonlar,
-        'markalar': markalar,  # Markaları context'e ekle
+        'markalar': markalar,
         'title': 'Ürün Ekle',
         'form_data': request.POST if request.method == 'POST' else {},
-        'barkod_param': barkod_param,  # Barkod parametresini ekle
+        'barkod_param': barkod_param,
     }
     return render(request, 'urun/ekle.html', context)
 
@@ -920,3 +921,165 @@ def kar_zarar_raporu(request):
         'satis_sayisi': satislar.count(),
     }
     return render(request, 'urun/kar_zarar_raporu.html', context)
+
+
+@login_required
+def varyant_yonet(request, urun_id):
+    """Ürün varyantlarını yönetme view'ı"""
+    urun = get_object_or_404(Urun, id=urun_id, varyasyonlu=True)
+    
+    if request.method == 'POST':
+        try:
+            # Varyant bilgilerini al
+            barkod = request.POST.get('barkod', '').strip()
+            renk_id = request.POST.get('renk') if request.POST.get('renk') else None
+            beden_id = request.POST.get('beden') if request.POST.get('beden') else None
+            diger_varyasyon_id = request.POST.get('diger_varyasyon') if request.POST.get('diger_varyasyon') else None
+            alis_fiyati = request.POST.get('alis_fiyati', '').strip()
+            kar_orani = request.POST.get('kar_orani', '50').strip()
+            satis_fiyati = request.POST.get('satis_fiyati', '').strip()
+            stok_miktari = request.POST.get('stok_miktari', '0').strip()
+            ek_aciklama = request.POST.get('ek_aciklama', '').strip()
+            resim = request.FILES.get('resim')
+            aktif = request.POST.get('aktif') == 'on'
+            
+            # Validasyonlar
+            if not satis_fiyati:
+                messages.error(request, 'Satış fiyatı zorunludur.')
+                raise ValueError('Satış fiyatı boş')
+            
+            # En az bir varyasyon seçilmiş olmalı
+            if not any([renk_id, beden_id, diger_varyasyon_id]):
+                messages.error(request, 'En az bir varyasyon seçiniz.')
+                raise ValueError('Varyasyon seçilmemiş')
+            
+            # Aynı kombinasyon var mı kontrol et
+            varyant_query = UrunVaryanti.objects.filter(urun=urun)
+            if renk_id:
+                varyant_query = varyant_query.filter(renk_id=renk_id)
+            else:
+                varyant_query = varyant_query.filter(renk__isnull=True)
+            
+            if beden_id:
+                varyant_query = varyant_query.filter(beden_id=beden_id)
+            else:
+                varyant_query = varyant_query.filter(beden__isnull=True)
+            
+            if diger_varyasyon_id:
+                varyant_query = varyant_query.filter(diger_varyasyon_id=diger_varyasyon_id)
+            else:
+                varyant_query = varyant_query.filter(diger_varyasyon__isnull=True)
+            
+            if varyant_query.exists():
+                messages.error(request, 'Bu varyasyon kombinasyonu zaten mevcut.')
+                raise ValueError('Varyasyon mevcut')
+            
+            # Barkod benzersizlik kontrolü
+            if barkod and UrunVaryanti.objects.filter(barkod=barkod).exists():
+                messages.error(request, 'Bu barkod zaten kullanılıyor.')
+                raise ValueError('Barkod mevcut')
+            
+            # Fiyat kontrolü
+            try:
+                alis_fiyati_decimal = Decimal(alis_fiyati) if alis_fiyati else Decimal('0')
+                kar_orani_decimal = Decimal(kar_orani)
+                satis_fiyati_decimal = Decimal(satis_fiyati)
+                stok_miktari_int = int(stok_miktari)
+                
+                if satis_fiyati_decimal <= 0:
+                    messages.error(request, 'Satış fiyatı 0\'dan büyük olmalıdır.')
+                    raise ValueError('Geçersiz satış fiyatı')
+                    
+                if stok_miktari_int < 0:
+                    messages.error(request, 'Stok miktarı negatif olamaz.')
+                    raise ValueError('Negatif stok')
+                    
+            except (ValueError, InvalidOperation):
+                messages.error(request, 'Geçersiz sayısal değer.')
+                raise ValueError('Geçersiz sayısal değer')
+            
+            # Varyasyon objelerini al
+            renk = Varyasyon.objects.get(id=renk_id, tip='renk') if renk_id else None
+            beden = Varyasyon.objects.get(id=beden_id, tip='beden') if beden_id else None
+            diger_varyasyon = Varyasyon.objects.get(id=diger_varyasyon_id, tip='diger') if diger_varyasyon_id else None
+            
+            # Varyant oluştur
+            varyant = UrunVaryanti.objects.create(
+                urun=urun,
+                barkod=barkod if barkod else None,  # Model'de otomatik oluşturulacak
+                renk=renk,
+                beden=beden,
+                diger_varyasyon=diger_varyasyon,
+                alis_fiyati=alis_fiyati_decimal,
+                kar_orani=kar_orani_decimal,
+                satis_fiyati=satis_fiyati_decimal,
+                stok_miktari=stok_miktari_int,
+                ek_aciklama=ek_aciklama,
+                resim=resim,
+                aktif=aktif
+            )
+            
+            # Aktivite logu
+            AktiviteLog.objects.create(
+                kullanici=request.user,
+                aktivite_tipi='ekleme',
+                baslik='Ürün Varyantı Eklendi',
+                aciklama=f'{urun.ad} ürününe {varyant.varyasyon_adi} varyantı eklendi',
+                content_object=varyant
+            )
+            
+            messages.success(request, f'✅ {varyant.varyasyon_adi} varyantı başarıyla eklendi!')
+            return redirect('urun:varyant_yonet', urun_id=urun.id)
+            
+        except ValueError:
+            # Hata mesajları zaten set edildi
+            pass
+        except Exception as e:
+            messages.error(request, f'❌ Varyant eklenirken beklenmeyen hata oluştu: {str(e)}')
+    
+    # Mevcut varyantları getir
+    varyantlar = UrunVaryanti.objects.filter(urun=urun).order_by('renk', 'beden', 'diger_varyasyon')
+    
+    # Varyasyon seçeneklerini getir
+    renkler = Varyasyon.objects.filter(tip='renk', aktif=True).order_by('sira', 'deger')
+    bedenler = Varyasyon.objects.filter(tip='beden', aktif=True).order_by('sira', 'deger')
+    diger_varyasyonlar = Varyasyon.objects.filter(tip='diger', aktif=True).order_by('sira', 'deger')
+    
+    context = {
+        'urun': urun,
+        'varyantlar': varyantlar,
+        'renkler': renkler,
+        'bedenler': bedenler,
+        'diger_varyasyonlar': diger_varyasyonlar,
+        'title': f'{urun.ad} - Varyant Yönetimi'
+    }
+    return render(request, 'urun/varyant_yonet.html', context)
+
+
+@login_required
+def varyant_sil(request, varyant_id):
+    """Ürün varyantını silme view'ı"""
+    varyant = get_object_or_404(UrunVaryanti, id=varyant_id)
+    urun = varyant.urun
+    
+    if request.method == 'POST':
+        varyasyon_adi = varyant.varyasyon_adi
+        varyant.delete()
+        
+        # Aktivite logu
+        AktiviteLog.objects.create(
+            kullanici=request.user,
+            aktivite_tipi='silme',
+            baslik='Ürün Varyantı Silindi',
+            aciklama=f'{urun.ad} ürününden {varyasyon_adi} varyantı silindi'
+        )
+        
+        messages.success(request, f'✅ {varyasyon_adi} varyantı başarıyla silindi!')
+        return redirect('urun:varyant_yonet', urun_id=urun.id)
+    
+    context = {
+        'varyant': varyant,
+        'urun': urun,
+        'title': f'Varyant Sil - {varyant.varyasyon_adi}'
+    }
+    return render(request, 'urun/varyant_sil.html', context)

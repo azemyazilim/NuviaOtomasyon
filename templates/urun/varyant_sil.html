@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Dikkat:</strong> Bu işlem geri alınamaz!
+                    </div>
+                    
+                    <p class="mb-3">Aşağıdaki varyantı silmek istediğinizden emin misiniz?</p>
+                    
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-2">Silinecek Varyant:</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><strong>Ürün:</strong> {{ urun.ad }}</li>
+                            <li><strong>Varyasyon:</strong> {{ varyant.varyasyon_adi }}</li>
+                            {% if varyant.barkod %}<li><strong>Barkod:</strong> {{ varyant.barkod }}</li>{% endif %}
+                            <li><strong>Satış Fiyatı:</strong> {{ varyant.satis_fiyati }}₺</li>
+                            <li><strong>Stok:</strong> {{ varyant.stok_miktari }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'urun:varyant_yonet' urun.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>İptal
+                        </a>
+                        
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Evet, Sil
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

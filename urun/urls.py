@@ -37,6 +37,10 @@ urlpatterns = [
     path('varyasyon/', views.varyasyon_yonetimi, name='varyasyon_yonetimi'),
     path('varyasyon/ekle/', views.varyasyon_ekle, name='varyasyon_ekle'),
     
+    # Varyant yönetimi
+    path('<int:urun_id>/varyant/', views.varyant_yonet, name='varyant_yonet'),
+    path('varyant/<int:varyant_id>/sil/', views.varyant_sil, name='varyant_sil'),
+    
     # AJAX endpoints
     path('ajax/barkod-kontrol/', views.barkod_kontrol, name='barkod_kontrol'),
 ]

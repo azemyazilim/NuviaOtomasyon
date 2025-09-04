@@ -242,7 +242,7 @@
                         <div class="form-floating">
                             <input type="text" class="form-control" id="sku" name="sku" placeholder="Ürün Kodu"
                                    value="{% if urun %}{{ urun.sku }}{% endif %}">
-                            <label for="sku">Ürün Kodu</label>
+                            <label for="sku">Ürün Kodu (Otomatik)</label>
                         </div>
                     </div>
                 </div>
@@ -257,19 +257,15 @@
             </div>
             
             <div class="row">
-                <div class="col-lg-6 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-barcode"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="text" class="form-control" id="barkod" name="barkod" placeholder="Barkod"
-                                   value="{% if barkod_param %}{{ barkod_param }}{% elif urun %}{{ urun.barkod }}{% endif %}" autofocus>
-                            <label for="barkod">Barkod</label>
-                        </div>
+                <div class="col-lg-12 mb-3">
+                    <div class="form-floating">
+                        <textarea class="form-control" id="aciklama" name="aciklama" placeholder="Açıklama" style="height: 80px;">{% if urun %}{{ urun.aciklama }}{% endif %}</textarea>
+                        <label for="aciklama">Ürün Açıklaması</label>
                     </div>
                 </div>
-                
+            </div>
+            
+            <div class="row">
                 <div class="col-lg-6 col-md-6 mb-3">
                     <div class="form-floating">
                         <select class="form-select" id="kategori" name="kategori" required>
@@ -284,9 +280,7 @@
                         <label for="kategori">Kategori <span class="required">*</span></label>
                     </div>
                 </div>
-            </div>
-            
-            <div class="row">
+                
                 <div class="col-lg-6 col-md-6 mb-3">
                     <div class="form-floating">
                         <select class="form-select" id="marka" name="marka">
@@ -306,21 +300,92 @@
                         <small>Ürünün markasını seçin veya boş bırakın.</small>
                     </div>
                 </div>
-                
+            </div>
+            
+            <div class="row">
                 <div class="col-lg-6 col-md-6 mb-3">
                     <div class="form-floating">
                         <select class="form-select" id="cinsiyet" name="cinsiyet">
                             <option value="kadin" {% if urun and urun.cinsiyet == 'kadin' %}selected{% elif not urun %}selected{% endif %}>Kadın</option>
                             <option value="erkek" {% if urun and urun.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                            <option value="unisex" {% if urun and urun.cinsiyet == 'unisex' %}selected{% endif %}>Unisex</option>
                         </select>
                         <label for="cinsiyet">
                             <i class="fas fa-venus-mars me-1"></i>Cinsiyet
                         </label>
                     </div>
                 </div>
+                
+                <div class="col-lg-6 col-md-6 mb-3">
+                    <div class="form-floating">
+                        <select class="form-select" id="birim" name="birim" required>
+                            <option value="">Birim Seçin</option>
+                            <option value="adet" {% if not urun or urun.birim == 'adet' %}selected{% endif %}>Adet</option>
+                            <option value="takim" {% if urun and urun.birim == 'takim' %}selected{% endif %}>Takım</option>
+                            <option value="cift" {% if urun and urun.birim == 'cift' %}selected{% endif %}>Çift</option>
+                            <option value="kg" {% if urun and urun.birim == 'kg' %}selected{% endif %}>Kilogram</option>
+                            <option value="gr" {% if urun and urun.birim == 'gr' %}selected{% endif %}>Gram</option>
+                            <option value="lt" {% if urun and urun.birim == 'lt' %}selected{% endif %}>Litre</option>
+                            <option value="ml" {% if urun and urun.birim == 'ml' %}selected{% endif %}>Mililitre</option>
+                            <option value="m" {% if urun and urun.birim == 'm' %}selected{% endif %}>Metre</option>
+                            <option value="cm" {% if urun and urun.birim == 'cm' %}selected{% endif %}>Santimetre</option>
+                        </select>
+                        <label for="birim">Birim <span class="required">*</span></label>
+                    </div>
+                </div>
             </div>
             
 
+        </div>
+
+        <!-- Varyasyon Ayarları -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-palette me-2"></i>Varyasyon Ayarları
+            </h4>
+            
+            <div class="row">
+                <div class="col-lg-12 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="varyasyonlu" name="varyasyonlu" 
+                               {% if urun and urun.varyasyonlu %}checked{% endif %} onchange="toggleVaryasyonFields()">
+                        <label class="form-check-label" for="varyasyonlu">
+                            <i class="fas fa-swatchbook me-1"></i>Bu ürün varyasyonlu (Renk, Beden vb.)
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">
+                        Varyasyonlu ürünler için farklı renk, beden kombinasyonları oluşturabilirsiniz.
+                    </small>
+                </div>
+            </div>
+            
+            <div id="varyasyonFields" style="display: none;">
+                <div class="row">
+                    <div class="col-lg-12 mb-3">
+                        <label class="form-label">Kullanılacak Varyasyon Tipleri:</label>
+                        <div class="row">
+                            {% for varyasyon in varyasyonlar %}
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="varyasyon_tipleri" 
+                                           value="{{ varyasyon.id }}" id="varyasyon_{{ varyasyon.id }}"
+                                           {% if urun and varyasyon in urun.varyasyon_tipleri.all %}checked{% endif %}>
+                                    <label class="form-check-label" for="varyasyon_{{ varyasyon.id }}">
+                                        {{ varyasyon.get_tip_display }}: {{ varyasyon.deger }}
+                                        {% if varyasyon.hex_kodu %}
+                                            <span class="badge" style="background-color: {{ varyasyon.hex_kodu }}; color: white;">{{ varyasyon.hex_kodu }}</span>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">
+                            Varyasyon ekleme/düzenleme için <a href="{% url 'admin:index' %}" target="_blank">admin paneli</a>ni kullanabilirsiniz.
+                        </small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Fiyat ve Stok Bilgileri -->
@@ -329,81 +394,78 @@
                 <i class="fas fa-money-bill-wave me-2"></i>Fiyat ve Stok Bilgileri
             </h4>
             
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-shopping-cart"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="number" class="form-control" id="alis_fiyati" name="alis_fiyati" step="0.01" min="0" placeholder="Alış Fiyatı" 
-                                   value="{% if urun %}{{ urun.alis_fiyati }}{% endif %}" oninput="calculateSalePrice()">
-                            <label for="alis_fiyati">Alış Fiyatı (₺)</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-percentage"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="number" class="form-control" id="kar_orani" name="kar_orani" step="0.01" min="0" max="1000" placeholder="Kar Oranı" 
-                                   value="{% if urun %}{{ urun.kar_orani }}{% endif %}" oninput="calculateSalePrice()">
-                            <label for="kar_orani">Kar Oranı (%)</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-tag"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="number" class="form-control" id="satis_fiyati" name="satis_fiyati" step="0.01" min="0" placeholder="Satış Fiyatı" 
-                                   value="{% if urun %}{{ urun.satis_fiyati }}{% endif %}" required readonly>
-                            <label for="satis_fiyati">Satış Fiyatı (₺) <span class="required">*</span></label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-boxes"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="number" class="form-control" id="stok_miktari" name="stok_miktari" min="0" placeholder="Stok Miktarı"
-                                   value="{% if urun %}{{ urun.stok_miktari }}{% endif %}">
-                            <label for="stok_miktari">Stok Miktarı</label>
-                        </div>
-                    </div>
-                </div>
+            <div class="alert alert-info" id="varyasyonuyari" style="display: none;">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Varyasyonlu Ürün:</strong> Bu ürün varyasyonlu olarak işaretlendiği için, her varyant için ayrı fiyat ve stok bilgileri ürün kaydedildikten sonra girilecektir.
             </div>
             
-            <div class="row">
-                <div class="col-lg-6 col-md-6 mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </span>
-                        <div class="form-floating">
-                            <input type="number" class="form-control" id="kritik_stok" name="kritik_stok" min="0" placeholder="Kritik Stok Seviyesi">
-                            <label for="kritik_stok">Kritik Stok Seviyesi</label>
+            <div id="temelFiyatFields">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-shopping-cart"></i>
+                            </span>
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="temel_alis_fiyati" name="temel_alis_fiyati" step="0.01" min="0" placeholder="Alış Fiyatı" 
+                                       value="{% if urun %}{{ urun.temel_alis_fiyati }}{% endif %}" oninput="calculateSalePrice()">
+                                <label for="temel_alis_fiyati">Alış Fiyatı (₺)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-percentage"></i>
+                            </span>
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="temel_kar_orani" name="temel_kar_orani" step="0.01" min="0" max="1000" placeholder="Kar Oranı" 
+                                       value="{% if urun %}{{ urun.temel_kar_orani }}{% else %}50{% endif %}" oninput="calculateSalePrice()">
+                                <label for="temel_kar_orani">Kar Oranı (%)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-tag"></i>
+                            </span>
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="temel_satis_fiyati" name="temel_satis_fiyati" step="0.01" min="0" placeholder="Satış Fiyatı" 
+                                       value="{% if urun %}{{ urun.temel_satis_fiyati }}{% endif %}" readonly>
+                                <label for="temel_satis_fiyati">Satış Fiyatı (₺)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-boxes"></i>
+                            </span>
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="temel_stok_miktari" name="temel_stok_miktari" min="0" placeholder="Stok Miktarı"
+                                       value="{% if urun %}{{ urun.temel_stok_miktari }}{% endif %}">
+                                <label for="temel_stok_miktari">Stok Miktarı</label>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="col-lg-6 col-md-6 mb-3">
-                    <div class="form-floating">
-                        <select class="form-select" id="birim" name="birim" required>
-                            <option value="">Birim Seçin</option>
-                            <option value="Adet" selected>Adet</option>
-                            <option value="Takım">Takım</option>
-                        </select>
-                        <label for="birim">Birim <span class="required">*</span></label>
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </span>
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="kritik_stok_seviyesi" name="kritik_stok_seviyesi" min="0" placeholder="Kritik Stok Seviyesi"
+                                       value="{% if urun %}{{ urun.kritik_stok_seviyesi }}{% else %}5{% endif %}">
+                                <label for="kritik_stok_seviyesi">Kritik Stok Seviyesi</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -445,7 +507,8 @@
             <div class="row">
                 <div class="col-lg-6 col-md-6 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="aktif" name="aktif" checked>
+                        <input class="form-check-input" type="checkbox" id="aktif" name="aktif" 
+                               {% if not urun or urun.aktif %}checked{% endif %}>
                         <label class="form-check-label" for="aktif">
                             <i class="fas fa-toggle-on me-1"></i>Ürün Aktif
                         </label>
@@ -454,7 +517,8 @@
                 
                 <div class="col-lg-6 col-md-6 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="stok_takibi" name="stok_takibi" checked>
+                        <input class="form-check-input" type="checkbox" id="stok_takibi" name="stok_takibi" 
+                               {% if not urun or urun.stok_takibi %}checked{% endif %}>
                         <label class="form-check-label" for="stok_takibi">
                             <i class="fas fa-chart-line me-1"></i>Stok Takibi Yapılsın
                         </label>
@@ -480,6 +544,24 @@
 
 {% block extra_js %}
 <script>
+    // Varyasyon alanlarını göster/gizle
+    function toggleVaryasyonFields() {
+        const varyasyonlu = document.getElementById('varyasyonlu').checked;
+        const varyasyonFields = document.getElementById('varyasyonFields');
+        const varyasyonUyari = document.getElementById('varyasyonuyari');
+        const temelFiyatFields = document.getElementById('temelFiyatFields');
+        
+        if (varyasyonlu) {
+            varyasyonFields.style.display = 'block';
+            varyasyonUyari.style.display = 'block';
+            temelFiyatFields.style.display = 'none';
+        } else {
+            varyasyonFields.style.display = 'none';
+            varyasyonUyari.style.display = 'none';
+            temelFiyatFields.style.display = 'block';
+        }
+    }
+
     // Görsel önizleme fonksiyonu
     function previewImage(input) {
         const preview = document.getElementById('imagePreview');
@@ -505,10 +587,14 @@
 
     // Form validasyonu
     document.getElementById('urunForm').addEventListener('submit', function(e) {
-        // Stok miktarını kontrol et - boşsa 0 yap
-        const stokMiktariField = document.getElementById('stok_miktari');
-        if (stokMiktariField.value === '' || stokMiktariField.value === null) {
-            stokMiktariField.value = '0';
+        const varyasyonlu = document.getElementById('varyasyonlu').checked;
+        
+        // Varyasyonsuz ürünler için stok miktarını kontrol et
+        if (!varyasyonlu) {
+            const stokMiktariField = document.getElementById('temel_stok_miktari');
+            if (stokMiktariField.value === '' || stokMiktariField.value === null) {
+                stokMiktariField.value = '0';
+            }
         }
         
         const requiredFields = this.querySelectorAll('[required]');
@@ -552,22 +638,11 @@
         }
     });
 
-    // Barkod otomatik oluşturma (isteğe bağlı)
-    document.getElementById('ad').addEventListener('blur', function() {
-        const barkodField = document.getElementById('barkod');
-        if (!barkodField.value && this.value) {
-            // Basit barkod oluşturma
-            const timestamp = Date.now().toString().slice(-6);
-            const productCode = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
-            barkodField.value = productCode + timestamp;
-        }
-    });
-
     // Kar oranına göre satış fiyatı hesaplama
     function calculateSalePrice() {
-        const alisFiyati = parseFloat(document.getElementById('alis_fiyati').value) || 0;
-        const karOrani = parseFloat(document.getElementById('kar_orani').value) || 0;
-        const satisFiyatiField = document.getElementById('satis_fiyati');
+        const alisFiyati = parseFloat(document.getElementById('temel_alis_fiyati').value) || 0;
+        const karOrani = parseFloat(document.getElementById('temel_kar_orani').value) || 0;
+        const satisFiyatiField = document.getElementById('temel_satis_fiyati');
         
         if (alisFiyati > 0 && karOrani >= 0) {
             const satisFiyati = alisFiyati + (alisFiyati * karOrani / 100);
@@ -580,15 +655,22 @@
     }
 
     // Stok miktarı boş olduğunda 0 yap
-    document.getElementById('stok_miktari').addEventListener('blur', function() {
+    document.getElementById('temel_stok_miktari').addEventListener('blur', function() {
         if (this.value === '' || this.value === null) {
             this.value = '0';
         }
     });
 
-    // Sayfa yüklendiğinde barkod alanına odaklan
+    // Sayfa yüklendiğinde
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('barkod').focus();
+        // Varyasyon alanlarının görünürlüğünü ayarla
+        toggleVaryasyonFields();
+        
+        // Ad alanına odaklan
+        document.getElementById('ad').focus();
+        
+        // Mevcut veriler varsa fiyatları hesapla
+        calculateSalePrice();
     });
 </script>
 {% endblock %}
