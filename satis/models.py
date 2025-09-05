@@ -204,12 +204,38 @@ class Satis(models.Model):
         """Para üstü tutarı"""
         return max(0, self.toplam_odenen - self.genel_toplam)
 
+    @property
+    def odeme_yontemleri(self):
+        """Ödeme yöntemlerini string olarak döndür"""
+        odemeler = self.odeme_set.all()
+        if not odemeler:
+            return "Beklemede"
+        
+        odeme_listesi = []
+        for odeme in odemeler:
+            if odeme.odeme_tipi == 'nakit':
+                odeme_listesi.append(f"Nakit ({odeme.tutar}₺)")
+            elif odeme.odeme_tipi == 'kart':
+                if odeme.taksit_sayisi and odeme.taksit_sayisi > 1:
+                    odeme_listesi.append(f"Kart {odeme.taksit_sayisi}x ({odeme.tutar}₺)")
+                else:
+                    odeme_listesi.append(f"Kart ({odeme.tutar}₺)")
+            elif odeme.odeme_tipi == 'hediye_ceki':
+                odeme_listesi.append(f"H.Çeki ({odeme.tutar}₺)")
+            elif odeme.odeme_tipi == 'havale':
+                odeme_listesi.append(f"Havale ({odeme.tutar}₺)")
+            elif odeme.odeme_tipi == 'acik_hesap':
+                odeme_listesi.append(f"A.Hesap ({odeme.tutar}₺)")
+        
+        return " + ".join(odeme_listesi)
+
 
 class Odeme(models.Model):
     """Ödeme bilgileri modeli"""
     ODEME_TIPLERI = [
         ('nakit', 'Nakit'),
-        ('kart', 'Kart'),
+        ('kart', 'Kredi Kartı'),
+        ('havale', 'Havale'),
         ('hediye_ceki', 'Hediye Çeki'),
         ('acik_hesap', 'Açık Hesap'),
     ]
@@ -251,6 +277,7 @@ class SatisDetay(models.Model):
     """Satış detay modeli - her ürün için ayrı kayıt"""
     satis = models.ForeignKey(Satis, on_delete=models.CASCADE, verbose_name="Satış")
     urun = models.ForeignKey(Urun, on_delete=models.CASCADE, verbose_name="Ürün")
+    varyant = models.ForeignKey('urun.UrunVaryanti', on_delete=models.CASCADE, null=True, blank=True, verbose_name="Varyant")
     miktar = models.PositiveIntegerField(verbose_name="Miktar")
     birim_fiyat = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Birim Fiyat")
     toplam_fiyat = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Toplam Fiyat")
@@ -281,10 +308,7 @@ class SatisDetay(models.Model):
         
         super().save(*args, **kwargs)
         
-        # Satış sonrası stok güncelle
-        if self.pk:  # Sadece kayıt edildikten sonra
-            self.urun.stok_miktari -= self.miktar
-            self.urun.save()
+        # Stok güncelleme işlemi view'de yapılıyor, burada yapmıyoruz
 
     @property
     def ara_toplam(self):

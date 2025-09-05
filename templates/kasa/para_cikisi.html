@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Para Çıkışı{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cikis-form {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border: 2px solid #dc3545;
+    }
+    
+    .kasa-bakiye {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 0.5rem;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .yetersiz-bakiye {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-minus-circle text-danger me-2"></i>Para Çıkışı</h2>
+                <a href="{% url 'kasa:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Kasalara Dön
+                </a>
+            </div>
+
+            <div class="cikis-form">
+                <form method="post" id="cikisForm">
+                    {% csrf_token %}
+                    
+                    <!-- Kasa Seçimi -->
+                    <div class="form-group mb-3">
+                        <label class="form-label"><i class="fas fa-wallet"></i> Kasa</label>
+                        <select name="kasa" id="kasa" class="form-select" required>
+                            <option value="">Kasa Seçin</option>
+                            {% for kasa in kasalar %}
+                            <option value="{{ kasa.id }}" data-bakiye="{{ kasa.guncel_bakiye }}">
+                                {{ kasa.ad }} ({{ kasa.get_tip_display }}) - {{ kasa.guncel_bakiye|floatformat:2 }}₺
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="kasaBakiye" class="kasa-bakiye" style="display: none;">
+                            Mevcut Bakiye: <span id="bakiyeTutar">0.00₺</span>
+                        </div>
+                    </div>
+
+                    <!-- Tutar -->
+                    <div class="form-group mb-3">
+                        <label class="form-label"><i class="fas fa-lira-sign"></i> Çıkış Tutarı</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₺</span>
+                            <input type="number" name="tutar" id="tutar" class="form-control" 
+                                   step="0.01" min="0.01" required placeholder="0.00">
+                        </div>
+                        <div id="tutarUyari" class="text-danger small mt-1" style="display: none;">
+                            Yetersiz bakiye!
+                        </div>
+                    </div>
+
+                    <!-- Çıkış Sebebi -->
+                    <div class="form-group mb-3">
+                        <label class="form-label"><i class="fas fa-tag"></i> Çıkış Sebebi</label>
+                        <select name="sebep" class="form-select" required>
+                            <option value="">Sebep Seçin</option>
+                            <option value="kisisel">Kişisel Çekim</option>
+                            <option value="harcama">Harcama</option>
+                            <option value="odeme">Ödeme</option>
+                            <option value="banka">Bankaya Yatırma</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+
+                    <!-- Açıklama -->
+                    <div class="form-group mb-4">
+                        <label class="form-label"><i class="fas fa-comment"></i> Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="3" 
+                                  placeholder="Para çıkışının detayını açıklayın..." required></textarea>
+                    </div>
+
+                    <!-- İşlem Özeti -->
+                    <div id="islemOzeti" class="alert alert-warning" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle"></i> İşlem Özeti</h6>
+                        <div id="ozetMetin"></div>
+                    </div>
+
+                    <!-- Butonlar -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                            <i class="fas fa-times"></i> İptal
+                        </button>
+                        <button type="submit" class="btn btn-danger" id="cikisBtn" disabled>
+                            <i class="fas fa-minus-circle"></i> Para Çıkar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Kasa seçim değişikliklerini dinle
+    $('#kasa').on('change', function() {
+        updateBakiyeGoster();
+        kontrolEt();
+    });
+    
+    // Tutar değişikliklerini dinle
+    $('#tutar').on('input', function() {
+        kontrolEt();
+    });
+    
+    // Form değişikliklerini dinle
+    $('#cikisForm select, #cikisForm textarea').on('change input', function() {
+        kontrolEt();
+    });
+    
+    function updateBakiyeGoster() {
+        const kasa = $('#kasa');
+        
+        if (kasa.val()) {
+            const bakiye = parseFloat(kasa.find(':selected').data('bakiye')) || 0;
+            $('#bakiyeTutar').text(bakiye.toFixed(2) + '₺');
+            $('#kasaBakiye').show();
+        } else {
+            $('#kasaBakiye').hide();
+        }
+    }
+    
+    function kontrolEt() {
+        const kasa = $('#kasa').val();
+        const tutar = parseFloat($('#tutar').val()) || 0;
+        const sebep = $('select[name="sebep"]').val();
+        const aciklama = $('textarea[name="aciklama"]').val().trim();
+        const mevcutBakiye = parseFloat($('#kasa').find(':selected').data('bakiye')) || 0;
+        
+        let isValid = true;
+        
+        // Yetersiz bakiye kontrolü
+        if (tutar > mevcutBakiye) {
+            isValid = false;
+            $('#tutarUyari').show();
+            $('#kasaBakiye').addClass('yetersiz-bakiye');
+        } else {
+            $('#tutarUyari').hide();
+            $('#kasaBakiye').removeClass('yetersiz-bakiye');
+        }
+        
+        // Form kontrolü
+        if (kasa && tutar > 0 && sebep && aciklama && isValid) {
+            $('#cikisBtn').prop('disabled', false);
+            updateIslemOzeti();
+        } else {
+            $('#cikisBtn').prop('disabled', true);
+            $('#islemOzeti').hide();
+        }
+    }
+    
+    function updateIslemOzeti() {
+        const kasaAd = $('#kasa').find(':selected').text();
+        const tutar = parseFloat($('#tutar').val()) || 0;
+        const sebep = $('select[name="sebep"] option:selected').text();
+        const mevcutBakiye = parseFloat($('#kasa').find(':selected').data('bakiye')) || 0;
+        const yeniBakiye = mevcutBakiye - tutar;
+        
+        const ozetHtml = `
+            <strong>${kasaAd}</strong> kasasından <strong>${tutar.toFixed(2)}₺</strong> çıkarılacak.<br>
+            <strong>Sebep:</strong> ${sebep}<br>
+            <strong>Mevcut Bakiye:</strong> ${mevcutBakiye.toFixed(2)}₺<br>
+            <strong>Yeni Bakiye:</strong> <span class="${yeniBakiye < 0 ? 'text-danger' : 'text-success'}">${yeniBakiye.toFixed(2)}₺</span>
+        `;
+        
+        $('#ozetMetin').html(ozetHtml);
+        $('#islemOzeti').show();
+    }
+});
+</script>
+{% endblock %}

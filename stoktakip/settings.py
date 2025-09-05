@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'rapor',
     'log',
     'gider',  # Giderler modülü
+    'kasa',   # Kasa yönetimi modülü
 ]
 
 MIDDLEWARE = [

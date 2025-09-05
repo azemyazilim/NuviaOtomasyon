@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Stok ve Satış Takip Sistemi{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: var(--primary-color);
+        }
+
+        .sidebar .nav-link {
+            color: #fff;
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: var(--info-color);
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            margin: 20px;
+            padding: 25px;
+            max-width: calc(100% - 40px);
+        }
+
+        /* Container genişlik kontrolü */
+        .container-fluid {
+            max-width: 100%;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        /* Form ve buton boyut kontrolleri */
+        .btn {
+            min-width: auto;
+            padding: 0.5rem 1rem;
+        }
+
+        .form-control, .form-select {
+            max-width: 100%;
+        }
+
+        /* Grid system düzeltmeleri */
+        .row {
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+
+        .col, .col-auto, [class*="col-"] {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        /* Buton grupları için */
+        .btn-group .btn {
+            flex: none;
+        }
+
+        /* Form grupları için */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        /* Input grupları için */
+        .input-group {
+            max-width: 100%;
+        }
+
+        /* Tablo responsive */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .page-title {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--info-color);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        .btn-primary {
+            background-color: var(--info-color);
+            border-color: var(--info-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        /* Hamburger Menu Styles */
+        .offcanvas-header {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .offcanvas-body {
+            background-color: var(--primary-color);
+            padding: 0;
+        }
+
+        .offcanvas-body .nav-link {
+            color: #fff;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .offcanvas-body .nav-link:hover {
+            background-color: var(--info-color);
+            color: #fff;
+        }
+
+        .offcanvas-body .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                margin: 10px;
+                padding: 15px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .page-title {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                width: auto;
+                min-width: auto;
+            }
+            
+            .form-control, .form-select {
+                width: 100%;
+            }
+            
+            .container-fluid {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+
+        /* Tablet ve küçük desktop */
+        @media (max-width: 992px) {
+            .main-content {
+                margin: 15px;
+                padding: 20px;
+                max-width: calc(100% - 30px);
+            }
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--info-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Badge styles */
+        .badge {
+            font-size: 0.8em;
+            border-radius: 6px;
+        }
+
+        /* Form styles */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--info-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        /* Buton boyut düzeltmeleri */
+        .btn:not(.btn-block):not(.w-100) {
+            width: auto !important;
+            min-width: fit-content;
+        }
+
+        /* Grid sistem için flex düzeltmeleri */
+        .d-flex .btn {
+            flex: none;
+        }
+
+        /* Form elemanları için genişlik kontrolleri */
+        .form-control:not(.w-100) {
+            width: auto;
+        }
+
+        .form-select:not(.w-100) {
+            width: auto;
+        }
+
+        /* Input group düzeltmeleri */
+        .input-group .form-control {
+            flex: 1 1 auto;
+        }
+
+        /* Button group düzeltmeleri */
+        .btn-group > .btn {
+            flex: 0 1 auto;
+        }
+
+        /* Specific fixes for common layouts */
+        .card-body .btn {
+            margin: 0.25rem;
+        }
+
+        .table .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <!-- Hamburger menu button for mobile -->
+            <button class="btn btn-outline-light d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fas fa-store me-2"></i>
+                Stok & Satış Takip
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            {{ user.get_full_name|default:user.username }}
+                            <span class="badge bg-secondary ms-1">{{ user.get_role_display }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'kullanici:profile' %}">
+                                <i class="fas fa-user-edit me-2"></i>Profil
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'kullanici:password_change' %}">
+                                <i class="fas fa-key me-2"></i>Şifre Değiştir
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'kullanici:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Çıkış
+                            </a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="nav-link" href="{% url 'kullanici:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i>Giriş
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Desktop Sidebar -->
+            <nav class="col-lg-2 d-none d-lg-block sidebar p-3">
+                <div class="nav flex-column">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Ana Sayfa
+                    </a>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Ürün Yönetimi</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:liste' %}">
+                            <i class="fas fa-boxes"></i>
+                            Ürün Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ekle' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:ekle' %}">
+                            <i class="fas fa-plus-circle"></i>
+                            Ürün Ekle
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kategori' %}active{% endif %}" href="{% url 'urun:kategori' %}">
+                            <i class="fas fa-tags"></i>
+                            Kategori Yönetimi
+                        </a>
+                            En Çok Satanlar
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar_raporu' %}active{% endif %}" href="#">
+                            <i class="fas fa-chart-pie"></i>
+                            Kar Zarar Raporu
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Satış İşlemleri</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ekrani' %}active{% endif %}" href="{% url 'satis:ekrani' %}">
+                            <i class="fas fa-cash-register"></i>
+                            Satış Ekranı
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'satis' %}active{% endif %}" href="{% url 'satis:liste' %}">
+                            <i class="fas fa-list-alt"></i>
+                            Satış Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_listesi' %}active{% endif %}" href="{% url 'satis:tahsilat_listesi' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tahsilat Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_rapor' %}active{% endif %}" href="{% url 'satis:tahsilat_rapor' %}">
+                            <i class="fas fa-chart-bar"></i>
+                            Tahsilat Raporları
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'barkod' %}active{% endif %}" href="{% url 'urun:barkod' %}">
+                            <i class="fas fa-barcode"></i>
+                            Barkod Sorgula
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'iade_ana_sayfa' %}active{% endif %}" href="{% url 'satis:iade_ana_sayfa' %}">
+                            <i class="fas fa-undo"></i>
+                            Satış İade
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'hediye' %}active{% endif %}" href="{% url 'hediye:liste' %}">
+                            <i class="fas fa-gift"></i>
+                            Hediye Çekleri
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Müşteri Yönetimi</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'musteri' %}active{% endif %}" href="{% url 'musteri:liste' %}">
+                            <i class="fas fa-users"></i>
+                            Müşteri Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ekle' and request.resolver_match.namespace == 'musteri' %}active{% endif %}" href="{% url 'musteri:ekle' %}">
+                            <i class="fas fa-user-plus"></i>
+                            Müşteri Ekle
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'borc_alacak_listesi' %}active{% endif %}" href="{% url 'musteri:borc_alacak_listesi' %}">
+                            <i class="fas fa-chart-line"></i>
+                            Borç-Alacak Takip
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_listesi' %}active{% endif %}" href="{% url 'musteri:tahsilat_listesi' %}">
+                            <i class="fas fa-money-bill"></i>
+                            Tahsilat İşlemleri
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Gider Yönetimi</h6>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'liste' %}active{% endif %}" href="{% url 'gider:liste' %}">
+                            <i class="fas fa-money-bill-wave"></i>
+                            Gider Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'ekle' %}active{% endif %}" href="{% url 'gider:ekle' %}">
+                            <i class="fas fa-plus-circle"></i>
+                            Gider Ekle
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'rapor' %}active{% endif %}" href="{% url 'gider:rapor' %}">
+                            <i class="fas fa-chart-pie"></i>
+                            Gider Raporları
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'kategori_liste' %}active{% endif %}" href="{% url 'gider:kategori_liste' %}">
+                            <i class="fas fa-tags"></i>
+                            Kategoriler
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Raporlar</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'gunluk_rapor' %}active{% endif %}" href="{% url 'gunluk_rapor' %}">
+                            <i class="fas fa-calendar-day"></i>
+                            Günlük Rapor
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'stok_durumu' %}active{% endif %}" href="#">
+                            <i class="fas fa-warehouse"></i>
+                            Stok Raporu
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'en_cok_satanlar' %}active{% endif %}" href="#">
+                            <i class="fas fa-chart-line"></i>
+                            En Çok Satanlar
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar_raporu' %}active{% endif %}" href="#">
+                            <i class="fas fa-chart-pie"></i>
+                            Kar/Zarar Raporu
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_rapor' %}active{% endif %}" href="#">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tahsilat Raporu
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Sistem</h6>
+                        {% if user.role == 'ADMIN' %}
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'kullanici:user_list' %}">
+                            <i class="fas fa-users-cog"></i>
+                            Kullanıcı Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and request.resolver_match.url_name == 'user_create' %}active{% endif %}" href="{% url 'kullanici:user_create' %}">
+                            <i class="fas fa-user-plus"></i>
+                            Kullanıcı Ekle
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and 'session' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'kullanici:user_sessions' %}">
+                            <i class="fas fa-desktop"></i>
+                            Aktif Oturumlar
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and 'activity' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'kullanici:user_activity_logs' %}">
+                            <i class="fas fa-user-clock"></i>
+                            Kullanıcı Aktiviteleri
+                        </a>
+                        {% endif %}
+                        <a class="nav-link {% if request.resolver_match.url_name == 'aktivite_loglari' %}active{% endif %}" href="{% url 'log:aktivite_loglari' %}">
+                            <i class="fas fa-history"></i>
+                            Sistem Logları
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Mobile Offcanvas Sidebar -->
+            <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="sidebarOffcanvas">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title">
+                        <i class="fas fa-store me-2"></i>
+                        Menü
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <div class="nav flex-column">
+                        <a class="nav-link" href="{% url 'dashboard' %}" data-bs-dismiss="offcanvas">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Ana Sayfa
+                        </a>
+                        
+                        <!-- Ürün Yönetimi -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Ürün Yönetimi</h6>
+                            <a class="nav-link" href="{% url 'urun:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-boxes"></i>Ürün Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:ekle' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-plus-circle"></i>Ürün Ekle
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:kategori' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-tags"></i>Kategori Yönetimi
+                            </a>
+                            <a class="nav-link" href="#" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-pie"></i>Kar Zarar Raporu
+                            </a>
+                        </div>
+                        
+                        <!-- Satış İşlemleri -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Satış İşlemleri</h6>
+                            <a class="nav-link" href="{% url 'satis:ekrani' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-cash-register"></i>Satış Ekranı
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-list-alt"></i>Satış Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:tahsilat_listesi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:tahsilat_rapor' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-bar"></i>Tahsilat Raporları
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:barkod' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-barcode"></i>Barkod Sorgula
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:iade_ana_sayfa' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-undo"></i>Satış İade
+                            </a>
+                            <a class="nav-link" href="{% url 'hediye:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-gift"></i>Hediye Çekleri
+                            </a>
+                        </div>
+                        
+                        <!-- Müşteri Yönetimi -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Müşteri Yönetimi</h6>
+                            <a class="nav-link" href="{% url 'musteri:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-users"></i>Müşteri Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'musteri:ekle' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-user-plus"></i>Müşteri Ekle
+                            </a>
+                            <a class="nav-link" href="{% url 'musteri:borc_alacak_listesi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-line"></i>Borç-Alacak Takip
+                            </a>
+                            <a class="nav-link" href="{% url 'musteri:tahsilat_listesi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-money-bill"></i>Tahsilat İşlemleri
+                            </a>
+                        </div>
+                        
+                        <!-- Raporlar -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Raporlar</h6>
+                            <a class="nav-link" href="#" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-warehouse"></i>Stok Raporu
+                            </a>
+                            <a class="nav-link" href="#" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-line"></i>En Çok Satanlar
+                            </a>
+                            <a class="nav-link" href="#" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-pie"></i>Kar/Zarar Raporu
+                            </a>
+                            <a class="nav-link" href="#" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Raporu
+                            </a>
+                        </div>
+                        
+                        <!-- Sistem -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Sistem</h6>
+                            {% if user.role == 'ADMIN' %}
+                            <a class="nav-link" href="{% url 'kullanici:user_list' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-users-cog"></i>Kullanıcı Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'kullanici:user_create' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-user-plus"></i>Kullanıcı Ekle
+                            </a>
+                            <a class="nav-link" href="{% url 'kullanici:user_sessions' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-desktop"></i>Aktif Oturumlar
+                            </a>
+                            <a class="nav-link" href="{% url 'kullanici:user_activity_logs' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-user-clock"></i>Kullanıcı Aktiviteleri
+                            </a>
+                            {% endif %}
+                            <a class="nav-link" href="{% url 'log:aktivite_loglari' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-history"></i>Sistem Logları
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main class="col-lg-10 ms-auto px-0">
+                <div class="main-content">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="container-fluid px-3">
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Global CSRF Token Setup for jQuery AJAX
+        function getCsrfToken() {
+            return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                   document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                   $('[name=csrfmiddlewaretoken]').val();
+        }
+        
+        // Global olarak erişilebilir hale getir
+        window.getCsrfToken = getCsrfToken;
+        
+        // Setup CSRF token for all AJAX requests
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
+                }
+            }
+        });
+        
+        // Auto hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            });
+        }, 5000);
+
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                const forms = document.getElementsByClassName('needs-validation');
+                const validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+
+        // Loading button state
+        function showLoading(button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="loading me-2"></span>İşleniyor...';
+            button.disabled = true;
+            
+            setTimeout(function() {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

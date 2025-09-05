@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Günlük Satış Raporu{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Günlük Satış Raporu</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'rapor:gunluk_satis_excel' %}?tarih={{ tarih }}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Excel İndir
+            </a>
+            <a href="{% url 'rapor:gunluk_satis_pdf' %}?tarih={{ tarih }}" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> PDF İndir
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarih Seçici -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-auto">
+                    <label class="form-label">Rapor Tarihi:</label>
+                    <input type="date" name="tarih" class="form-control" value="{{ tarih }}" onchange="this.form.submit()">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Özet Kartlar -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5>Toplam Satış</h5>
+                    <h3>{{ toplam_satis|floatformat:2 }} ₺</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5>Satış Adedi</h5>
+                    <h3>{{ satis_sayisi }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5>Ortalama Satış</h5>
+                    <h3>{{ ortalama_satis|floatformat:2 }} ₺</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h5>Toplam Ürün</h5>
+                    <h3>{{ toplam_urun_adet }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satış Listesi -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{{ tarih|date:'d.m.Y' }} Tarihli Satışlar</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Saat</th>
+                            <th>Satış No</th>
+                            <th>Müşteri</th>
+                            <th>Ürün Sayısı</th>
+                            <th>Toplam</th>
+                            <th>Satıcı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for satis in satislar %}
+                        <tr>
+                            <td>{{ satis.satis_tarihi|time:'H:i' }}</td>
+                            <td>{{ satis.satis_no }}</td>
+                            <td>{{ satis.musteri.ad_soyad|default:"Perakende" }}</td>
+                            <td>{{ satis.satisdetay_set.count }}</td>
+                            <td>{{ satis.toplam_tutar|floatformat:2 }} ₺</td>
+                            <td>{{ satis.satici.get_full_name }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Bu tarihte satış bulunamadı.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1086,39 +1086,39 @@
                                 <div class="product-details">
                                     <h5 class="product-title">{{ urun.ad }}</h5>
                                     <p class="product-category">
-                                        <i class="fas fa-tag me-1"></i>{{ urun.kategori_ad }}
+                                        <i class="fas fa-tag me-1"></i>{{ urun.kategori.ad|default:"Kategorisiz" }}
                                     </p>
                                     
                                     <!-- Marka Bilgisi -->
-                                    {% if urun.marka_ad %}
+                                    {% if urun.marka %}
                                     <p class="product-brand">
-                                        <i class="fas fa-copyright me-1"></i>{{ urun.marka_ad }}
+                                        <i class="fas fa-copyright me-1"></i>{{ urun.marka.ad }}
                                     </p>
                                     {% endif %}
                                     
                                     <!-- Stok Durumu -->
                                     <div class="product-stock">
-                                        {% if urun.stok_miktari == 0 %}
+                                        {% if urun.toplam_stok == 0 %}
                                             <span class="stock-out">
                                                 <i class="fas fa-times-circle me-1"></i>Stok Tükendi
                                             </span>
-                                        {% elif urun.stok_miktari <= 10 %}
+                                        {% elif urun.toplam_stok <= 10 %}
                                             <span class="stock-low">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>Kritik: {{ urun.stok_miktari }} adet
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Kritik: {{ urun.toplam_stok }} adet
                                             </span>
-                                        {% elif urun.stok_miktari <= 50 %}
+                                        {% elif urun.toplam_stok <= 50 %}
                                             <span class="stock-medium">
-                                                <i class="fas fa-minus-circle me-1"></i>Az: {{ urun.stok_miktari }} adet
+                                                <i class="fas fa-minus-circle me-1"></i>Az: {{ urun.toplam_stok }} adet
                                             </span>
                                         {% else %}
                                             <span class="stock-high">
-                                                <i class="fas fa-check-circle me-1"></i>Yeterli: {{ urun.stok_miktari }} adet
+                                                <i class="fas fa-check-circle me-1"></i>Yeterli: {{ urun.toplam_stok }} adet
                                             </span>
                                         {% endif %}
                                     </div>
                                     
                                     <!-- Barkod -->
-                                    {% if urun.barkod %}
+                                    {% if urun.barkod and urun.barkod != '-' %}
                                         <div class="text-muted small mb-2">
                                             <i class="fas fa-barcode me-1"></i>{{ urun.barkod }}
                                         </div>
@@ -1150,10 +1150,17 @@
                                         <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-outline-warning btn-sm" title="Düzenle">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        {% if urun.silme_izni %}
                                         <a href="{% url 'urun:sil' urun.id %}" class="btn btn-outline-danger btn-sm" 
                                            onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')" title="Sil">
                                             <i class="fas fa-trash"></i>
                                         </a>
+                                        {% else %}
+                                        <button class="btn btn-outline-secondary btn-sm" disabled 
+                                                title="Bu ürün silinemez (Hareket görmüş veya stoğu var)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -1212,33 +1219,33 @@
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">
-                                            {{ urun.kategori_ad|default:"Kategorisiz" }}
+                                            {{ urun.kategori.ad|default:"Kategorisiz" }}
                                         </span>
                                     </td>
-                                    <td>{{ urun.marka_ad|default:"-" }}</td>
+                                    <td>{{ urun.marka.ad|default:"-" }}</td>
                                     <td>
-                                        {% if urun.barkod %}
+                                        {% if urun.barkod and urun.barkod != '-' %}
                                             <code>{{ urun.barkod }}</code>
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        {% if urun.stok_miktari == 0 %}
+                                        {% if urun.toplam_stok == 0 %}
                                             <span class="badge bg-danger">
                                                 <i class="fas fa-times-circle me-1"></i>Tükendi
                                             </span>
-                                        {% elif urun.stok_miktari <= 10 %}
+                                        {% elif urun.toplam_stok <= 10 %}
                                             <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>{{ urun.stok_miktari }}
+                                                <i class="fas fa-exclamation-triangle me-1"></i>{{ urun.toplam_stok }}
                                             </span>
-                                        {% elif urun.stok_miktari <= 50 %}
+                                        {% elif urun.toplam_stok <= 50 %}
                                             <span class="badge bg-info">
-                                                <i class="fas fa-minus-circle me-1"></i>{{ urun.stok_miktari }}
+                                                <i class="fas fa-minus-circle me-1"></i>{{ urun.toplam_stok }}
                                             </span>
                                         {% else %}
                                             <span class="badge bg-success">
-                                                <i class="fas fa-check-circle me-1"></i>{{ urun.stok_miktari }}
+                                                <i class="fas fa-check-circle me-1"></i>{{ urun.toplam_stok }}
                                             </span>
                                         {% endif %}
                                     </td>
@@ -1253,9 +1260,17 @@
                                             <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-outline-warning" title="Düzenle">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            {% if urun.silme_izni %}
                                             <a href="{% url 'urun:sil' urun.id %}" class="btn btn-outline-danger" 
                                                onclick="return confirm('Bu ürünü silmek istediğinizden emin misiniz?')" title="Sil">
                                                 <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% else %}
+                                            <button class="btn btn-outline-secondary" disabled 
+                                                    title="Bu ürün silinemez (Hareket görmüş veya stoğu var)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
                                             </a>
                                         </div>
                                     </td>
@@ -1329,123 +1344,17 @@
 {% block extra_js %}
 <script>
     // Görünüm değiştirme fonksiyonu
-    function setView(viewType) {
-        const gridBtn = document.getElementById('gridView');
-        const listBtn = document.getElementById('listView');
-        const container = document.getElementById('productContainer');
-        const productItems = document.querySelectorAll('.product-item');
-        
-        // Buton durumlarını güncelle
-        gridBtn.classList.remove('active');
-        listBtn.classList.remove('active');
-        
-        if (viewType === 'grid') {
-            gridBtn.classList.add('active');
-            container.classList.remove('product-list-view');
-            
-            // Grid görünüm için sınıfları ayarla
-            productItems.forEach(item => {
-                item.className = 'col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4 product-item';
-            });
-            
-            // Local storage'a kaydet
-            localStorage.setItem('productView', 'grid');
-            
-        } else if (viewType === 'list') {
-            listBtn.classList.add('active');
-            container.classList.add('product-list-view');
-            
-            // Liste görünüm için sınıfları ayarla
-            productItems.forEach(item => {
-                item.className = 'col-12 mb-3 product-item';
-            });
-            
-            // Local storage'a kaydet
-            localStorage.setItem('productView', 'list');
-        }
-    }
-    
-    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
-    document.addEventListener('DOMContentLoaded', function() {
-        const savedView = localStorage.getItem('productView') || 'grid';
-        setView(savedView);
-    });
-    
-    // Arama formu otomatik gönderme
-    document.getElementById('kategori').addEventListener('change', function() {
-        this.form.submit();
-    });
-    
-    document.getElementById('durum').addEventListener('change', function() {
-        this.form.submit();
-    });
-    
-    // Gerçek zamanlı arama (debounced)
-    let searchTimeout;
-    document.getElementById('q').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            // Bu sadece 3 karakterden fazla olduğunda çalışır
-            if (this.value.length >= 3 || this.value.length === 0) {
-                this.form.submit();
-            }
-        }, 500);
-    });
-    
-    // Görünüm değiştirme fonksiyonu
-    function setView(viewType) {
-        const container = document.getElementById('productContainer');
-        const cardViews = document.querySelectorAll('.card-view-info');
-        const listViews = document.querySelectorAll('.list-view-info');
-        const listHeader = document.querySelector('.list-header');
-        const productItems = document.querySelectorAll('.product-item');
-        const cardBtn = document.getElementById('gridView');
-        const listBtn = document.getElementById('listView');
-        
-        if (viewType === 'list') {
-            // Liste görünümü
-            container.classList.add('product-list-view');
-            productItems.forEach(item => {
-                item.classList.remove('col-xl-3', 'col-lg-4', 'col-md-6');
-                item.classList.add('col-12');
-            });
-            cardViews.forEach(view => view.classList.add('d-none'));
-            listViews.forEach(view => view.classList.remove('d-none'));
-            if (listHeader) listHeader.classList.remove('d-none');
-            
-            cardBtn.classList.remove('active');
-            listBtn.classList.add('active');
-        } else {
-            // Kart görünümü (grid)
-            container.classList.remove('product-list-view');
-            productItems.forEach(item => {
-                item.classList.remove('col-12');
-                item.classList.add('col-xl-3', 'col-lg-4', 'col-md-6');
-            });
-            cardViews.forEach(view => view.classList.remove('d-none'));
-            listViews.forEach(view => view.classList.add('d-none'));
-            if (listHeader) listHeader.classList.add('d-none');
-            
-            listBtn.classList.remove('active');
-            cardBtn.classList.add('active');
-        }
-        
-        // Seçimi localStorage'da sakla
-        localStorage.setItem('productViewType', viewType);
-    }
-    
-    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
-    document.addEventListener('DOMContentLoaded', function() {
-        const savedView = localStorage.getItem('productViewType') || 'grid';
-        setView(savedView);
-    });
-    
-    // Görünüm değiştirme fonksiyonları
     function switchView(viewType) {
         const cardView = document.getElementById('cardView');
         const tableView = document.getElementById('tableView');
         const cardBtn = document.getElementById('cardViewBtn');
         const tableBtn = document.getElementById('tableViewBtn');
+        
+        // Null kontrolü ekle
+        if (!cardView || !tableView || !cardBtn || !tableBtn) {
+            console.warn('View elements not found');
+            return;
+        }
         
         if (viewType === 'card') {
             // Kart görünümü
@@ -1468,11 +1377,43 @@
         // Seçimi localStorage'da sakla
         localStorage.setItem('productViewType', viewType);
     }
-    
-    // Sayfa yüklendiğinde kaydedilmiş görünümü uygula
+
+    // Sayfa yüklendiğinde setup işlemleri
     document.addEventListener('DOMContentLoaded', function() {
+        // Kaydedilmiş görünümü uygula
         const savedView = localStorage.getItem('productViewType') || 'card';
         switchView(savedView);
+        
+        // Arama formu otomatik gönderme
+        const kategoriSelect = document.getElementById('kategori');
+        const durumSelect = document.getElementById('durum');
+        const searchInput = document.getElementById('q');
+        
+        if (kategoriSelect) {
+            kategoriSelect.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+        
+        if (durumSelect) {
+            durumSelect.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+        
+        // Gerçek zamanlı arama (debounced)
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    // Bu sadece 3 karakterden fazla olduğunda çalışır
+                    if (this.value.length >= 3 || this.value.length === 0) {
+                        this.form.submit();
+                    }
+                }, 500);
+            });
+        }
     });
 </script>
 {% endblock %}

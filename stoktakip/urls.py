@@ -58,6 +58,7 @@ urlpatterns = [
     path('rapor/', include('rapor.urls', namespace='rapor')),
     path('log/', include('log.urls', namespace='log')),
     path('gider/', include('gider.urls', namespace='gider')),  # Giderler modülü
+    path('kasa/', include('kasa.urls', namespace='kasa')),     # Kasa yönetimi modülü
 ]
 
 # Media files için

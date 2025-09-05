@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.hediye_ceki_listesi, name='liste'),
     path('<int:pk>/', views.hediye_ceki_detay, name='detay'),
     path('<int:pk>/iptal/', views.hediye_ceki_iptal, name='iptal'),
+    path('<int:pk>/yazdir/', views.hediye_ceki_yazdir, name='yazdir'),
     
     # AJAX endpoints
     path('ajax/sorgula/', views.hediye_ceki_ajax_sorgula, name='ajax_sorgula'),

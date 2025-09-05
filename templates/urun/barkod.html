@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Barkod Sorgula{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-barcode"></i>
+                        Barkod Sorgula
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="mb-4">
+                        {% csrf_token %}
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">
+                                <i class="fas fa-barcode"></i>
+                            </span>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                name="barkod" 
+                                id="barkodInput"
+                                placeholder="Barkod numarasını giriniz veya okutunuz..." 
+                                value="{{ barkod }}"
+                                autofocus
+                            >
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                                Sorgula
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if urun %}
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle"></i> Ürün Bulundu!</h5>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">Ürün Bilgileri</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Ürün Adı:</strong></td>
+                                            <td>{{ urun.ad }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Barkod:</strong></td>
+                                            <td>{{ urun.barkod }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Kategori:</strong></td>
+                                            <td>{{ urun.kategori.ad }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Marka:</strong></td>
+                                            <td>{{ urun.marka.ad|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Açıklama:</strong></td>
+                                            <td>{{ urun.aciklama|default:"-" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">Fiyat ve Stok Bilgileri</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Alış Fiyatı:</strong></td>
+                                            <td>{{ urun.alis_fiyati|floatformat:2 }} ₺</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Satış Fiyatı:</strong></td>
+                                            <td class="text-success fw-bold">{{ urun.satis_fiyati|floatformat:2 }} ₺</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Kar Oranı:</strong></td>
+                                            <td>{{ urun.kar_orani|floatformat:0 }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Stok Miktarı:</strong></td>
+                                            <td>
+                                                <span class="badge {% if urun.stok_miktari > 10 %}bg-success{% elif urun.stok_miktari > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ urun.stok_miktari }} {{ urun.birim }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Durum:</strong></td>
+                                            <td>
+                                                {% if urun.aktif %}
+                                                    <span class="badge bg-success">Aktif</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Pasif</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'urun:liste' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i>
+                            Ürün Listesi
+                        </a>
+                        <a href="{% url 'satis:ekrani' %}" class="btn btn-outline-success">
+                            <i class="fas fa-cash-register"></i>
+                            Satış Ekranı
+                        </a>
+                    </div>
+                    
+                    {% elif barkod %}
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-times-circle"></i> Ürün Bulunamadı!</h5>
+                        <p class="mb-0">
+                            "<strong>{{ barkod }}</strong>" barkoduna sahip ürün sistemde kayıtlı değil.
+                        </p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'urun:ekle' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Yeni Ürün Ekle
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Barkod input'una otomatik odaklan
+    const barkodInput = document.getElementById('barkodInput');
+    if (barkodInput) {
+        barkodInput.focus();
+        
+        // Enter tuşuyla formu gönder
+        barkodInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

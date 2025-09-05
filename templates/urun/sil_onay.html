@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ urun.ad }} - Ürün Sil{% endblock %}
+
+{% block extra_css %}
+<style>
+    .warning-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+        border-left: 5px solid #dc3545;
+    }
+    
+    .product-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+    }
+    
+    .danger-icon {
+        font-size: 4rem;
+        color: #dc3545;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1 text-danger">
+                <i class="fas fa-trash-alt me-2"></i>
+                Ürün Sil
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:liste' %}">Ürünler</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:detay' urun.id %}">{{ urun.ad }}</a></li>
+                    <li class="breadcrumb-item active">Sil</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card warning-card">
+                <div class="card-body">
+                    
+                    <!-- Uyarı Başlığı -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-exclamation-triangle danger-icon"></i>
+                        <h3 class="text-danger mt-3">DİKKAT!</h3>
+                        <p class="lead text-muted">Bu işlem geri alınamaz!</p>
+                    </div>
+                    
+                    <!-- Ürün Bilgileri -->
+                    <div class="product-info mb-4">
+                        <h4 class="mb-3">Silinecek Ürün Bilgileri:</h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Ürün Adı:</strong></td>
+                                        <td>{{ urun.ad }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ürün Kodu:</strong></td>
+                                        <td>{{ urun.urun_kodu }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Kategori:</strong></td>
+                                        <td>{{ urun.kategori.ad }}</td>
+                                    </tr>
+                                    {% if urun.marka %}
+                                    <tr>
+                                        <td><strong>Marka:</strong></td>
+                                        <td>{{ urun.marka.ad }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Satış Fiyatı:</strong></td>
+                                        <td>{{ urun.satis_fiyati }} ₺</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Toplam Stok:</strong></td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ urun.toplam_stok }} adet</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Varyant Sayısı:</strong></td>
+                                        <td>{{ urun.varyantlar.count }} adet</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Durum:</strong></td>
+                                        <td>
+                                            {% if urun.aktif %}
+                                                <span class="badge bg-success">Aktif</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Pasif</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if not silme_izni %}
+                    <!-- Silme Engeli Uyarısı -->
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-ban me-2"></i>Bu Ürün Silinemez!</h5>
+                        <p class="mb-0">{{ hata_mesaji }}</p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-3">
+                        <a href="{% url 'urun:detay' urun.id %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>Ürün Detayına Dön
+                        </a>
+                        <a href="{% url 'urun:liste' %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-list me-2"></i>Ürün Listesine Dön
+                        </a>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Uyarı Mesajları -->
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-exclamation-circle me-2"></i>Bu işlem sonucunda:</h5>
+                        <ul class="mb-0">
+                            <li>Ürün <strong>kalıcı olarak</strong> silinecek</li>
+                            <li>Ürüne ait <strong>{{ urun.varyantlar.count }} varyant</strong> silinecek</li>
+                            <li>Bu işlem <strong>geri alınamaz</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Onay Formu -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="onay" required>
+                            <label class="form-check-label" for="onay">
+                                <strong>Yukarıdaki uyarıları okudum ve anladım. Bu ürünü kalıcı olarak silmek istiyorum.</strong>
+                            </label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>İptal Et
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg" id="silButton" disabled>
+                                <i class="fas fa-trash-alt me-2"></i>Ürünü Sil
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+{% if silme_izni %}
+// Onay checkbox'ı kontrolü
+document.getElementById('onay').addEventListener('change', function() {
+    const silButton = document.getElementById('silButton');
+    silButton.disabled = !this.checked;
+    
+    if (this.checked) {
+        silButton.classList.remove('btn-secondary');
+        silButton.classList.add('btn-danger');
+    } else {
+        silButton.classList.remove('btn-danger');
+        silButton.classList.add('btn-secondary');
+    }
+});
+
+// Form submit onayı
+document.querySelector('form').addEventListener('submit', function(e) {
+    const urunAdi = '{{ urun.ad }}';
+    const onay = confirm(`"${urunAdi}" ürünü kalıcı olarak silinecek. Bu işlemi onaylıyor musunuz?`);
+    
+    if (!onay) {
+        e.preventDefault();
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

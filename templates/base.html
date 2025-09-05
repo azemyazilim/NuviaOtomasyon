@@ -41,7 +41,6 @@
 
         .sidebar {
             min-height: calc(100vh - 56px);
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             background-color: var(--primary-color);
         }
 
@@ -75,6 +74,44 @@
             margin: 20px;
             padding: 25px;
             max-width: calc(100% - 40px);
+        }
+
+        /* Menu Search */
+        .menu-search {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #adb5bd;
+            z-index: 10;
+        }
+
+        .search-input {
+            padding-left: 40px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 8px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .search-input:focus {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--info-color);
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
         }
 
         /* Container genişlik kontrolü */
@@ -262,44 +299,11 @@
             box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
         }
 
-        /* Buton boyut düzeltmeleri */
-        .btn:not(.btn-block):not(.w-100) {
-            width: auto !important;
-            min-width: fit-content;
-        }
-
-        /* Grid sistem için flex düzeltmeleri */
-        .d-flex .btn {
-            flex: none;
-        }
-
-        /* Form elemanları için genişlik kontrolleri */
-        .form-control:not(.w-100) {
-            width: auto;
-        }
-
-        .form-select:not(.w-100) {
-            width: auto;
-        }
-
-        /* Input group düzeltmeleri */
-        .input-group .form-control {
-            flex: 1 1 auto;
-        }
-
-        /* Button group düzeltmeleri */
-        .btn-group > .btn {
-            flex: 0 1 auto;
-        }
-
-        /* Specific fixes for common layouts */
-        .card-body .btn {
-            margin: 0.25rem;
-        }
-
-        .table .btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
+        /* Nav section headers */
+        .nav-section h6 {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
     </style>
     
@@ -353,43 +357,19 @@
         <div class="row">
             <!-- Desktop Sidebar -->
             <nav class="col-lg-2 d-none d-lg-block sidebar p-3">
+                <!-- Menu Search -->
+                <div class="menu-search mb-3">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="menuSearch" class="form-control search-input" placeholder="Menü ara...">
+                    </div>
+                </div>
+
                 <div class="nav flex-column">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                         <i class="fas fa-tachometer-alt"></i>
                         Ana Sayfa
                     </a>
-                    
-                    <div class="nav-section mt-3">
-                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Ürün Yönetimi</h6>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:liste' %}">
-                            <i class="fas fa-boxes"></i>
-                            Ürün Listesi
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'ekle' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:ekle' %}">
-                            <i class="fas fa-plus-circle"></i>
-                            Ürün Ekle
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'kategori' %}active{% endif %}" href="{% url 'urun:kategori' %}">
-                            <i class="fas fa-tags"></i>
-                            Kategori Yönetimi
-                        </a>
-                        <a class="nav-link {% if 'marka' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'urun:marka_listesi' %}">
-                            <i class="fas fa-copyright"></i>
-                            Marka Yönetimi
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'stok_durumu' %}active{% endif %}" href="{% url 'urun:stok_durumu' %}">
-                            <i class="fas fa-warehouse"></i>
-                            Stok Durumu
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'en_cok_satanlar' %}active{% endif %}" href="{% url 'urun:en_cok_satanlar' %}">
-                            <i class="fas fa-chart-line"></i>
-                            En Çok Satanlar
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar_raporu' %}active{% endif %}" href="{% url 'urun:kar_zarar_raporu' %}">
-                            <i class="fas fa-chart-pie"></i>
-                            Kar Zarar Raporu
-                        </a>
-                    </div>
                     
                     <div class="nav-section mt-3">
                         <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Satış İşlemleri</h6>
@@ -405,10 +385,6 @@
                             <i class="fas fa-hand-holding-usd"></i>
                             Tahsilat Listesi
                         </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_rapor' %}active{% endif %}" href="{% url 'satis:tahsilat_rapor' %}">
-                            <i class="fas fa-chart-bar"></i>
-                            Tahsilat Raporları
-                        </a>
                         <a class="nav-link {% if request.resolver_match.url_name == 'barkod' %}active{% endif %}" href="{% url 'urun:barkod' %}">
                             <i class="fas fa-barcode"></i>
                             Barkod Sorgula
@@ -420,6 +396,66 @@
                         <a class="nav-link {% if request.resolver_match.namespace == 'hediye' %}active{% endif %}" href="{% url 'hediye:liste' %}">
                             <i class="fas fa-gift"></i>
                             Hediye Çekleri
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Raporlar</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'gunluk_rapor' %}active{% endif %}" href="{% url 'gunluk_rapor' %}">
+                            <i class="fas fa-calendar-day"></i>
+                            Günlük Rapor
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'gunluk_satis' %}active{% endif %}" href="{% url 'rapor:gunluk_satis' %}">
+                            <i class="fas fa-chart-bar"></i>
+                            Günlük Satış Raporu
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'stok_raporu' %}active{% endif %}" href="{% url 'rapor:stok_raporu' %}">
+                            <i class="fas fa-boxes"></i>
+                            Detaylı Stok Raporu
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'cok_satan_urunler' %}active{% endif %}" href="{% url 'rapor:cok_satan_urunler' %}">
+                            <i class="fas fa-star"></i>
+                            Çok Satan Ürünler
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar' %}active{% endif %}" href="{% url 'rapor:kar_zarar' %}">
+                            <i class="fas fa-chart-pie"></i>
+                            Kâr/Zarar Analizi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'musteri_raporu' %}active{% endif %}" href="{% url 'rapor:musteri_raporu' %}">
+                            <i class="fas fa-users"></i>
+                            Müşteri Analizi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'en_cok_satanlar' %}active{% endif %}" href="{% url 'urun:en_cok_satanlar' %}">
+                            <i class="fas fa-chart-line"></i>
+                            En Çok Satanlar
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar_raporu' %}active{% endif %}" href="{% url 'urun:kar_zarar_raporu' %}">
+                            <i class="fas fa-chart-pie"></i>
+                            Kar/Zarar Raporu
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_rapor' %}active{% endif %}" href="{% url 'satis:tahsilat_rapor' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tahsilat Raporu
+                        </a>
+                    </div>
+                    
+                    <div class="nav-section mt-3">
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Ürün Yönetimi</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:liste' %}">
+                            <i class="fas fa-boxes"></i>
+                            Ürün Listesi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ekle' and request.resolver_match.namespace == 'urun' %}active{% endif %}" href="{% url 'urun:ekle' %}">
+                            <i class="fas fa-plus-circle"></i>
+                            Ürün Ekle
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kategori' %}active{% endif %}" href="{% url 'urun:kategori' %}">
+                            <i class="fas fa-tags"></i>
+                            Kategori Yönetimi
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'marka_listesi' %}active{% endif %}" href="{% url 'urun:marka_listesi' %}">
+                            <i class="fas fa-copyright"></i>
+                            Marka Yönetimi
                         </a>
                     </div>
                     
@@ -445,56 +481,52 @@
                     
                     <div class="nav-section mt-3">
                         <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Gider Yönetimi</h6>
-                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'liste' %}active{% endif %}" href="{% url 'gider:liste' %}">
-                            <i class="fas fa-money-bill-wave"></i>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'liste' and request.resolver_match.namespace == 'gider' %}active{% endif %}" href="{% url 'gider:liste' %}">
+                            <i class="fas fa-receipt"></i>
                             Gider Listesi
                         </a>
-                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'ekle' %}active{% endif %}" href="{% url 'gider:ekle' %}">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ekle' and request.resolver_match.namespace == 'gider' %}active{% endif %}" href="{% url 'gider:ekle' %}">
                             <i class="fas fa-plus-circle"></i>
                             Gider Ekle
                         </a>
-                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'rapor' %}active{% endif %}" href="{% url 'gider:rapor' %}">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'kategori_liste' %}active{% endif %}" href="{% url 'gider:kategori_liste' %}">
+                            <i class="fas fa-tags"></i>
+                            Gider Kategorileri
+                        </a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'rapor' and request.resolver_match.namespace == 'gider' %}active{% endif %}" href="{% url 'gider:rapor' %}">
                             <i class="fas fa-chart-pie"></i>
                             Gider Raporları
                         </a>
-                        <a class="nav-link {% if request.resolver_match.namespace == 'gider' and request.resolver_match.url_name == 'kategori_liste' %}active{% endif %}" href="{% url 'gider:kategori_liste' %}">
-                            <i class="fas fa-tags"></i>
-                            Kategoriler
-                        </a>
                     </div>
-                    
+
                     <div class="nav-section mt-3">
-                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Raporlar</h6>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'gunluk_rapor' %}active{% endif %}" href="{% url 'gunluk_rapor' %}">
-                            <i class="fas fa-calendar-day"></i>
-                            Günlük Rapor
+                        <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Kasa Yönetimi</h6>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'kasa' %}active{% endif %}" href="{% url 'kasa:dashboard' %}">
+                            <i class="fas fa-wallet"></i>
+                            Kasa Özeti
                         </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'stok_durumu' %}active{% endif %}" href="{% url 'urun:stok_durumu' %}">
-                            <i class="fas fa-warehouse"></i>
-                            Stok Raporu
+                        <a class="nav-link {% if request.resolver_match.url_name == 'virman' %}active{% endif %}" href="{% url 'kasa:virman' %}">
+                            <i class="fas fa-exchange-alt"></i>
+                            Kasa Virmanı
                         </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'en_cok_satanlar' %}active{% endif %}" href="{% url 'urun:en_cok_satanlar' %}">
-                            <i class="fas fa-chart-line"></i>
-                            En Çok Satanlar
+                        <a class="nav-link {% if request.resolver_match.url_name == 'para_girisi' %}active{% endif %}" href="{% url 'kasa:para_girisi' %}">
+                            <i class="fas fa-plus-circle text-success"></i>
+                            Para Girişi
                         </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'kar_zarar_raporu' %}active{% endif %}" href="{% url 'urun:kar_zarar_raporu' %}">
-                            <i class="fas fa-chart-pie"></i>
-                            Kar/Zarar Raporu
-                        </a>
-                        <a class="nav-link {% if request.resolver_match.url_name == 'tahsilat_rapor' %}active{% endif %}" href="{% url 'satis:tahsilat_rapor' %}">
-                            <i class="fas fa-hand-holding-usd"></i>
-                            Tahsilat Raporu
+                        <a class="nav-link {% if request.resolver_match.url_name == 'para_cikisi' %}active{% endif %}" href="{% url 'kasa:para_cikisi' %}">
+                            <i class="fas fa-minus-circle text-danger"></i>
+                            Para Çıkışı
                         </a>
                     </div>
-                    
+
                     <div class="nav-section mt-3">
                         <h6 class="text-light opacity-75 text-uppercase fw-bold mb-2 ps-3">Sistem</h6>
                         {% if user.role == 'ADMIN' %}
-                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'kullanici:user_list' %}">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and 'list' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'kullanici:user_list' %}">
                             <i class="fas fa-users-cog"></i>
                             Kullanıcı Listesi
                         </a>
-                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and request.resolver_match.url_name == 'user_create' %}active{% endif %}" href="{% url 'kullanici:user_create' %}">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'kullanici' and 'create' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'kullanici:user_create' %}">
                             <i class="fas fa-user-plus"></i>
                             Kullanıcı Ekle
                         </a>
@@ -531,6 +563,61 @@
                             Ana Sayfa
                         </a>
                         
+                        <!-- Satış İşlemleri -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Satış İşlemleri</h6>
+                            <a class="nav-link" href="{% url 'satis:ekrani' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-cash-register"></i>Satış Ekranı
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-list-alt"></i>Satış Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:tahsilat_listesi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Listesi
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:barkod' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-barcode"></i>Barkod Sorgula
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:iade_ana_sayfa' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-undo"></i>Satış İade
+                            </a>
+                            <a class="nav-link" href="{% url 'hediye:liste' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-gift"></i>Hediye Çekleri
+                            </a>
+                        </div>
+                        
+                        <!-- Raporlar -->
+                        <div class="nav-section">
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Raporlar</h6>
+                            <a class="nav-link" href="{% url 'gunluk_rapor' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-calendar-day"></i>Günlük Rapor
+                            </a>
+                            <a class="nav-link" href="{% url 'rapor:gunluk_satis' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-bar"></i>Günlük Satış Raporu
+                            </a>
+                            <a class="nav-link" href="{% url 'rapor:stok_raporu' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-boxes"></i>Detaylı Stok Raporu
+                            </a>
+                            <a class="nav-link" href="{% url 'rapor:cok_satan_urunler' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-star"></i>Çok Satan Ürünler
+                            </a>
+                            <a class="nav-link" href="{% url 'rapor:kar_zarar' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-pie"></i>Kâr/Zarar Analizi
+                            </a>
+                            <a class="nav-link" href="{% url 'rapor:musteri_raporu' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-users"></i>Müşteri Analizi
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:en_cok_satanlar' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-line"></i>En Çok Satanlar
+                            </a>
+                            <a class="nav-link" href="{% url 'urun:kar_zarar_raporu' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-chart-pie"></i>Kar/Zarar Raporu
+                            </a>
+                            <a class="nav-link" href="{% url 'satis:tahsilat_rapor' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Raporu
+                            </a>
+                        </div>
+                        
                         <!-- Ürün Yönetimi -->
                         <div class="nav-section">
                             <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Ürün Yönetimi</h6>
@@ -545,41 +632,6 @@
                             </a>
                             <a class="nav-link" href="{% url 'urun:marka_listesi' %}" data-bs-dismiss="offcanvas">
                                 <i class="fas fa-copyright"></i>Marka Yönetimi
-                            </a>
-                            <a class="nav-link" href="{% url 'urun:stok_durumu' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-warehouse"></i>Stok Durumu
-                            </a>
-                            <a class="nav-link" href="{% url 'urun:en_cok_satanlar' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-chart-line"></i>En Çok Satanlar
-                            </a>
-                            <a class="nav-link" href="{% url 'urun:kar_zarar_raporu' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-chart-pie"></i>Kar Zarar Raporu
-                            </a>
-                        </div>
-                        
-                        <!-- Satış İşlemleri -->
-                        <div class="nav-section">
-                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Satış İşlemleri</h6>
-                            <a class="nav-link" href="{% url 'satis:ekrani' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-cash-register"></i>Satış Ekranı
-                            </a>
-                            <a class="nav-link" href="{% url 'satis:liste' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-list-alt"></i>Satış Listesi
-                            </a>
-                            <a class="nav-link" href="{% url 'satis:tahsilat_listesi' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Listesi
-                            </a>
-                            <a class="nav-link" href="{% url 'satis:tahsilat_rapor' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-chart-bar"></i>Tahsilat Raporları
-                            </a>
-                            <a class="nav-link" href="{% url 'urun:barkod' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-barcode"></i>Barkod Sorgula
-                            </a>
-                            <a class="nav-link" href="{% url 'satis:iade_ana_sayfa' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-undo"></i>Satış İade
-                            </a>
-                            <a class="nav-link" href="{% url 'hediye:liste' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-gift"></i>Hediye Çekleri
                             </a>
                         </div>
                         
@@ -600,20 +652,20 @@
                             </a>
                         </div>
                         
-                        <!-- Raporlar -->
+                        <!-- Kasa Yönetimi -->
                         <div class="nav-section">
-                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Raporlar</h6>
-                            <a class="nav-link" href="{% url 'urun:stok_durumu' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-warehouse"></i>Stok Raporu
+                            <h6 class="text-light opacity-75 text-uppercase fw-bold mb-0 p-3 border-bottom border-secondary">Kasa Yönetimi</h6>
+                            <a class="nav-link" href="{% url 'kasa:dashboard' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-wallet"></i>Kasa Özeti
                             </a>
-                            <a class="nav-link" href="{% url 'urun:en_cok_satanlar' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-chart-line"></i>En Çok Satanlar
+                            <a class="nav-link" href="{% url 'kasa:virman' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-exchange-alt"></i>Kasa Virmanı
                             </a>
-                            <a class="nav-link" href="{% url 'urun:kar_zarar_raporu' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-chart-pie"></i>Kar/Zarar Raporu
+                            <a class="nav-link" href="{% url 'kasa:para_girisi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-plus-circle text-success"></i>Para Girişi
                             </a>
-                            <a class="nav-link" href="{% url 'satis:tahsilat_rapor' %}" data-bs-dismiss="offcanvas">
-                                <i class="fas fa-hand-holding-usd"></i>Tahsilat Raporu
+                            <a class="nav-link" href="{% url 'kasa:para_cikisi' %}" data-bs-dismiss="offcanvas">
+                                <i class="fas fa-minus-circle text-danger"></i>Para Çıkışı
                             </a>
                         </div>
                         
@@ -665,75 +717,47 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    
-    <!-- Bootstrap 5 JS -->
+    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
-    <!-- Custom JavaScript -->
+
     <script>
-        // Global CSRF Token Setup for jQuery AJAX
-        function getCsrfToken() {
-            return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
-                   document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
-                   $('[name=csrfmiddlewaretoken]').val();
-        }
-        
-        // Global olarak erişilebilir hale getir
-        window.getCsrfToken = getCsrfToken;
-        
-        // Setup CSRF token for all AJAX requests
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
-                }
+        // Menu Search Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('menuSearch');
+            const navLinks = document.querySelectorAll('.sidebar .nav-link');
+            const navSections = document.querySelectorAll('.sidebar .nav-section');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    
+                    navLinks.forEach(link => {
+                        const text = link.textContent.toLowerCase().trim();
+                        const isVisible = text.includes(searchTerm);
+                        link.style.display = isVisible ? 'flex' : 'none';
+                    });
+
+                    navSections.forEach(section => {
+                        const hasVisibleLinks = [...section.nextElementSibling?.parentElement?.querySelectorAll('.nav-link') || []].some(link => {
+                            return link.style.display !== 'none';
+                        });
+                        section.style.display = hasVisibleLinks ? 'block' : 'none';
+                    });
+                });
             }
         });
-        
-        // Auto hide alerts after 5 seconds
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                if (alert) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
+
+        // Select2 initialization
+        $(document).ready(function() {
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
             });
-        }, 5000);
-
-        // Form validation
-        (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                const forms = document.getElementsByClassName('needs-validation');
-                const validation = Array.prototype.filter.call(forms, function(form) {
-                    form.addEventListener('submit', function(event) {
-                        if (form.checkValidity() === false) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-            }, false);
-        })();
-
-        // Loading button state
-        function showLoading(button) {
-            const originalText = button.innerHTML;
-            button.innerHTML = '<span class="loading me-2"></span>İşleniyor...';
-            button.disabled = true;
-            
-            setTimeout(function() {
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }, 3000);
-        }
+        });
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

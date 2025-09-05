@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <span class="text-muted">Son 30 Gün</span>
+    </div>
+
+    <!-- Özet Kartlar -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5>Toplam Satış</h5>
+                    <h3>{{ satislar.toplam_satis|default:0|floatformat:2 }} ₺</h3>
+                    <p>{{ satislar.toplam_miktar|default:0 }} adet</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5>Toplam Kar</h5>
+                    <h3>{% with toplam_kar=0 %}
+                        {% for item in urun_kar_zarar %}
+                            {% with toplam_kar=toplam_kar|add:item.kar %}{% endwith %}
+                        {% endfor %}
+                        {{ toplam_kar|floatformat:2 }} ₺
+                    {% endwith %}</h3>
+                    <p>kar marjı</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5>Ürün Çeşidi</h5>
+                    <h3>{{ urun_kar_zarar|length }}</h3>
+                    <p>farklı ürün</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detaylı Kar Zarar Tablosu -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Ürün Bazında Kar/Zarar Analizi</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ürün Adı</th>
+                            <th>Alış Fiyatı</th>
+                            <th>Satış Fiyatı</th>
+                            <th>Satılan Miktar</th>
+                            <th>Toplam Satış</th>
+                            <th>Toplam Maliyet</th>
+                            <th>Kar/Zarar</th>
+                            <th>Kar Marjı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in urun_kar_zarar %}
+                        <tr>
+                            <td>{{ item.urun__ad }}</td>
+                            <td>{{ item.urun__alis_fiyati|floatformat:2 }} ₺</td>
+                            <td>{{ item.urun__satis_fiyati|floatformat:2 }} ₺</td>
+                            <td>{{ item.toplam_miktar }}</td>
+                            <td>{{ item.toplam_satis|floatformat:2 }} ₺</td>
+                            <td>{{ item.toplam_maliyet|floatformat:2 }} ₺</td>
+                            <td>
+                                <span class="fw-bold {% if item.kar > 0 %}text-success{% elif item.kar < 0 %}text-danger{% else %}text-warning{% endif %}">
+                                    {{ item.kar|floatformat:2 }} ₺
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.toplam_satis > 0 %}
+                                    {% widthratio item.kar item.toplam_satis 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Son 30 günde satış bulunamadı.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

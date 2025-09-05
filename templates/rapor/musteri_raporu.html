@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}Müşteri Raporu{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users text-primary"></i>
+                        Müşteri Analiz Raporu
+                    </h4>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="exportExcel()">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Özet İstatistikler -->
+                    {% if musteri_stats %}
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Aktif Müşteri</h6>
+                                            <h4 class="mb-0">{{ musteri_stats|length }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-user-check fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">En Yüksek Ciro</h6>
+                                            <h4 class="mb-0">₺{{ musteri_stats.0.toplam_satis|floatformat:0 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-crown fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Toplam Ciro</h6>
+                                            <h4 class="mb-0">
+                                                ₺{% for stat in musteri_stats %}{{ stat.toplam_satis|add:0 }}{% if not forloop.last %}+{% endif %}{% endfor %}
+                                            </h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-chart-line fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Ortalama Sepet</h6>
+                                            <h4 class="mb-0">₺{{ musteri_stats.0.ortalama_satis|floatformat:0 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-shopping-basket fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Müşteri Listesi -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-trophy text-warning"></i>
+                                En Değerli Müşteriler (Top 20)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if musteri_stats %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Müşteri Adı</th>
+                                            <th>Telefon</th>
+                                            <th>Toplam Satış</th>
+                                            <th>Satış Adedi</th>
+                                            <th>Ortalama Sepet</th>
+                                            <th>Müşteri Puanı</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stat in musteri_stats %}
+                                        <tr>
+                                            <td>
+                                                {% if forloop.counter <= 3 %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-medal"></i> {{ forloop.counter }}
+                                                    </span>
+                                                {% else %}
+                                                    {{ forloop.counter }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ stat.musteri.ad_soyad }}</strong>
+                                                {% if stat.musteri.sirket %}
+                                                    <br><small class="text-muted">{{ stat.musteri.sirket }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if stat.musteri.telefon %}
+                                                    <a href="tel:{{ stat.musteri.telefon }}" class="text-decoration-none">
+                                                        <i class="fas fa-phone"></i> {{ stat.musteri.telefon }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success fs-6">
+                                                    ₺{{ stat.toplam_satis|floatformat:2 }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">
+                                                    {{ stat.satis_adedi }} satış
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    ₺{{ stat.ortalama_satis|floatformat:2 }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% with puan=stat.toplam_satis|floatformat:0|add:0 %}
+                                                    {% if puan >= 10000 %}
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="fas fa-crown"></i> VIP
+                                                        </span>
+                                                    {% elif puan >= 5000 %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-star"></i> Altın
+                                                        </span>
+                                                    {% elif puan >= 2000 %}
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-gem"></i> Gümüş
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">
+                                                            <i class="fas fa-user"></i> Standart
+                                                        </span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">Henüz satış yapılan müşteri bulunmuyor</h5>
+                                <p class="text-muted">Müşteri analiz raporu görüntülemek için önce satış işlemleri gerçekleştirin.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Müşteri Segmentasyon Grafiği -->
+                    {% if musteri_stats %}
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Müşteri Segmentasyonu</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="segmentChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Top 10 Müşteri Cirosu</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="topCustomersChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Müşteri İstatistikleri -->
+                    {% if musteri_stats %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Müşteri Analiz Özeti</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>En Değerli Müşteri:</h6>
+                                            <p class="text-success">
+                                                <i class="fas fa-crown"></i>
+                                                {{ musteri_stats.0.musteri.ad_soyad }} - 
+                                                ₺{{ musteri_stats.0.toplam_satis|floatformat:2 }}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>En Aktif Müşteri:</h6>
+                                            {% with en_aktif=musteri_stats|dictsort:"satis_adedi"|last %}
+                                            <p class="text-info">
+                                                <i class="fas fa-chart-line"></i>
+                                                {{ en_aktif.musteri.ad_soyad }} - 
+                                                {{ en_aktif.satis_adedi }} satış
+                                            </p>
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if musteri_stats %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Müşteri segmentasyon grafiği
+const segmentCtx = document.getElementById('segmentChart').getContext('2d');
+let vipCount = 0, goldCount = 0, silverCount = 0, standardCount = 0;
+
+{% for stat in musteri_stats %}
+    {% with puan=stat.toplam_satis|floatformat:0|add:0 %}
+        {% if puan >= 10000 %}
+            vipCount++;
+        {% elif puan >= 5000 %}
+            goldCount++;
+        {% elif puan >= 2000 %}
+            silverCount++;
+        {% else %}
+            standardCount++;
+        {% endif %}
+    {% endwith %}
+{% endfor %}
+
+new Chart(segmentCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['VIP', 'Altın', 'Gümüş', 'Standart'],
+        datasets: [{
+            data: [vipCount, goldCount, silverCount, standardCount],
+            backgroundColor: ['#ffc107', '#28a745', '#17a2b8', '#6c757d'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Top 10 müşteri grafiği
+const topCustomersCtx = document.getElementById('topCustomersChart').getContext('2d');
+new Chart(topCustomersCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for stat in musteri_stats|slice:":10" %}
+                '{{ stat.musteri.ad_soyad|truncatechars:15 }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Toplam Satış (₺)',
+            data: [
+                {% for stat in musteri_stats|slice:":10" %}
+                    {{ stat.toplam_satis }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: '#007bff',
+            borderColor: '#0056b3',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Export fonksiyonları
+function exportExcel() {
+    const url = new URL(window.location.href);
+    url.pathname = url.pathname.replace('/musteri-raporu/', '/musteri-raporu/excel/');
+    window.open(url.toString(), '_blank');
+}
+
+function exportPDF() {
+    const url = new URL(window.location.href);
+    url.pathname = url.pathname.replace('/musteri-raporu/', '/musteri-raporu/pdf/');
+    window.open(url.toString(), '_blank');
+}
+</script>
+{% endif %}
+{% endblock %}

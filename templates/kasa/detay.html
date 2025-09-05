@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ kasa.ad }} - Kasa Detayı{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kasa-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .kasa-header.nakit {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    
+    .kasa-header.pos {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .kasa-header.kart {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .kasa-header.banka {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .stat-box {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .hareket-item {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 5px solid #dee2e6;
+        transition: transform 0.2s;
+    }
+    
+    .hareket-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .hareket-item.giris {
+        border-left-color: #28a745;
+    }
+    
+    .hareket-item.cikis {
+        border-left-color: #dc3545;
+    }
+    
+    .hareket-tutar.giris {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .hareket-tutar.cikis {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .date-input {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+    }
+    
+    .btn-filter {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .btn-filter:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Kasa Başlığı -->
+    <div class="kasa-header {{ kasa.tip }}">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-wallet me-3"></i>{{ kasa.ad }}</h2>
+                <p class="mb-2"><strong>Tip:</strong> {{ kasa.get_tip_display }}</p>
+                <p class="mb-0"><strong>Açıklama:</strong> {{ kasa.aciklama|default:"Açıklama eklenmemiş" }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="display-6 mb-2">{{ kasa.guncel_bakiye|turkish_currency }}</div>
+                <small>Mevcut Bakiye</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-box">
+                <div class="stat-number text-success">{{ toplam_giris|turkish_currency }}</div>
+                <div class="stat-label">Toplam Giriş</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-box">
+                <div class="stat-number text-danger">{{ toplam_cikis|turkish_currency }}</div>
+                <div class="stat-label">Toplam Çıkış</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-box">
+                <div class="stat-number {% if net_hareket >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ net_hareket|turkish_currency }}
+                </div>
+                <div class="stat-label">Net Hareket</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-box">
+                <div class="stat-number text-info">{{ hareketler.count }}</div>
+                <div class="stat-label">Toplam İşlem</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreleme -->
+    <div class="filter-section">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç Tarihi</label>
+                <input type="date" name="tarih_baslangic" class="form-control date-input" 
+                       value="{{ tarih_baslangic }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş Tarihi</label>
+                <input type="date" name="tarih_bitis" class="form-control date-input" 
+                       value="{{ tarih_bitis }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-filter">
+                    <i class="fas fa-filter me-2"></i>Filtrele
+                </button>
+                <a href="{% url 'kasa:detay' kasa.id %}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-times me-2"></i>Temizle
+                </a>
+            </div>
+            <div class="col-md-3 text-end">
+                <a href="{% url 'kasa:dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Geri Dön
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Hareket Listesi -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-history me-2"></i>Kasa Hareketleri
+                {% if tarih_baslangic or tarih_bitis %}
+                    <small class="ms-2">
+                        ({% if tarih_baslangic %}{{ tarih_baslangic }}{% endif %}
+                        {% if tarih_baslangic and tarih_bitis %} - {% endif %}
+                        {% if tarih_bitis %}{{ tarih_bitis }}{% endif %})
+                    </small>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if hareketler %}
+                <div class="p-3">
+                    {% for hareket in hareketler %}
+                        <div class="hareket-item {{ hareket.tip }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <div class="text-muted small">{{ hareket.tarih|date:"d.m.Y H:i" }}</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-{% if hareket.tip == 'giris' %}success{% else %}danger{% endif %}">
+                                        {% if hareket.tip == 'giris' %}
+                                            <i class="fas fa-arrow-down me-1"></i>Giriş
+                                        {% else %}
+                                            <i class="fas fa-arrow-up me-1"></i>Çıkış
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-info">{{ hareket.get_kaynak_display }}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="fw-bold">{{ hareket.aciklama }}</div>
+                                    {% if hareket.kullanici %}
+                                        <small class="text-muted">{{ hareket.kullanici.get_full_name|default:hareket.kullanici.username }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <div class="hareket-tutar {{ hareket.tip }}">
+                                        {% if hareket.tip == 'giris' %}+{% else %}-{% endif %}{{ hareket.tutar|turkish_currency }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Hareket bulunamadı</h5>
+                    <p class="text-muted">Seçilen tarih aralığında bu kasada herhangi bir hareket kaydı bulunmuyor.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Tarih inputları için bugünün tarihini maksimum olarak ayarla
+    const today = new Date().toISOString().split('T')[0];
+    $('input[type="date"]').attr('max', today);
+});
+</script>
+{% endblock %}

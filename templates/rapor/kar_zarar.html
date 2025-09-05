@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Kâr/Zarar Analizi{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-pie text-primary"></i>
+                        Kâr/Zarar Analizi
+                    </h4>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="exportExcel()">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtreler -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <form method="get" class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="baslangic" class="form-label">Başlangıç Tarihi</label>
+                                    <input type="date" class="form-control" id="baslangic" name="baslangic" 
+                                           value="{{ baslangic|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="bitis" class="form-label">Bitiş Tarihi</label>
+                                    <input type="date" class="form-control" id="bitis" name="bitis" 
+                                           value="{{ bitis|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Filtrele
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Özet Kartları -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Toplam Ciro</h6>
+                                            <h4 class="mb-0">₺{{ toplam_ciro|floatformat:2 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Toplam Maliyet</h6>
+                                            <h4 class="mb-0">₺{{ toplam_maliyet|floatformat:2 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-shopping-cart fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card {% if toplam_kar >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Toplam Kâr/Zarar</h6>
+                                            <h4 class="mb-0">₺{{ toplam_kar|floatformat:2 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas {% if toplam_kar >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %} fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Kâr Marjı</h6>
+                                            <h4 class="mb-0">%{{ kar_marji|floatformat:1 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-percentage fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grafik Alanı -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Ciro vs Maliyet</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="ciroMaliyetChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Kâr/Zarar Dağılımı</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="karZararChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analiz Sonuçları -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Analiz Sonuçları</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if toplam_kar > 0 %}
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle"></i>
+                                            <strong>Pozitif Performans:</strong> 
+                                            {{ baslangic|date:"d/m/Y" }} - {{ bitis|date:"d/m/Y" }} tarihlerinde 
+                                            ₺{{ toplam_kar|floatformat:2 }} kâr elde edilmiştir. 
+                                            Kâr marjınız %{{ kar_marji|floatformat:1 }}'dir.
+                                        </div>
+                                    {% elif toplam_kar == 0 %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <strong>Başabaş Durum:</strong> 
+                                            Seçili dönemde kâr veya zarar elde edilmemiştir.
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-times-circle"></i>
+                                            <strong>Zarar Durumu:</strong> 
+                                            {{ baslangic|date:"d/m/Y" }} - {{ bitis|date:"d/m/Y" }} tarihlerinde 
+                                            ₺{{ toplam_kar|floatformat:2 }} zarar oluşmuştur.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Ciro vs Maliyet Grafiği
+const ciroMaliyetCtx = document.getElementById('ciroMaliyetChart').getContext('2d');
+new Chart(ciroMaliyetCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Ciro', 'Maliyet'],
+        datasets: [{
+            label: 'Tutar (₺)',
+            data: [{{ toplam_ciro }}, {{ toplam_maliyet }}],
+            backgroundColor: ['#007bff', '#ffc107'],
+            borderColor: ['#0056b3', '#e0a800'],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Kâr/Zarar Dağılım Grafiği
+const karZararCtx = document.getElementById('karZararChart').getContext('2d');
+new Chart(karZararCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Maliyet', 'Kâr'],
+        datasets: [{
+            data: [{{ toplam_maliyet }}, {% if toplam_kar > 0 %}{{ toplam_kar }}{% else %}0{% endif %}],
+            backgroundColor: ['#ffc107', '#28a745'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Export fonksiyonları
+function exportExcel() {
+    const url = new URL(window.location.href);
+    url.pathname = url.pathname.replace('/kar-zarar/', '/kar-zarar/excel/');
+    window.open(url.toString(), '_blank');
+}
+
+function exportPDF() {
+    const url = new URL(window.location.href);
+    url.pathname = url.pathname.replace('/kar-zarar/', '/kar-zarar/pdf/');
+    window.open(url.toString(), '_blank');
+}
+</script>
+{% endblock %}

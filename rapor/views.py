@@ -44,18 +44,81 @@ def gunluk_satis(request):
 @login_required
 def stok_raporu(request):
     """Stok raporu view'ı"""
-    urunler = Urun.objects.filter(aktif=True).order_by('kategori__ust_kategori__ad', 'kategori__ad', 'ad')
+    from urun.models import UrunVaryanti, UrunKategoriUst, Marka
+    from django.db.models import Sum, Q
     
-    # Filtreler
+    # Tüm varyantları al ve ürün bazında grupla
+    varyantlar = UrunVaryanti.objects.filter(
+        aktif=True, 
+        urun__aktif=True
+    ).select_related('urun', 'urun__kategori', 'urun__marka', 'renk', 'beden').order_by('urun__kategori__ad', 'urun__ad')
+    
+    # Arama filtreleri
+    arama = request.GET.get('arama', '').strip()
+    kategori_id = request.GET.get('kategori')
+    marka_id = request.GET.get('marka')
     durum = request.GET.get('durum')
+    
+    # Sıralama parametreleri
+    sort_field = request.GET.get('sort', 'urun__ad')
+    sort_order = request.GET.get('order', 'asc')
+    
+    # Geçerli sıralama alanları
+    valid_sort_fields = [
+        'urun__ad', 'renk__ad', 'barkod', 'urun__kategori__ad', 
+        'urun__marka__ad', 'urun__alis_fiyati', 'urun__satis_fiyati', 'stok_miktari'
+    ]
+    
+    if sort_field not in valid_sort_fields:
+        sort_field = 'urun__ad'
+    
+    # Sıralama yönü
+    if sort_order == 'desc':
+        sort_field = '-' + sort_field
+    
+    # Arama filtresi
+    if arama:
+        varyantlar = varyantlar.filter(
+            Q(urun__ad__icontains=arama) |
+            Q(barkod__icontains=arama) |
+            Q(urun__urun_kodu__icontains=arama) |
+            Q(renk__ad__icontains=arama) |
+            Q(beden__ad__icontains=arama)
+        )
+    
+    # Kategori filtresi
+    if kategori_id:
+        varyantlar = varyantlar.filter(urun__kategori_id=kategori_id)
+    
+    # Marka filtresi
+    if marka_id:
+        varyantlar = varyantlar.filter(urun__marka_id=marka_id)
+    
+    # Stok durumu filtresi
     if durum == 'tukendi':
-        urunler = urunler.filter(stok_miktari=0)
+        varyantlar = varyantlar.filter(stok_miktari=0)
     elif durum == 'kritik':
-        urunler = urunler.filter(stok_miktari__gt=0, stok_miktari__lte=F('minimum_stok'))
+        varyantlar = varyantlar.filter(stok_miktari__gt=0, stok_miktari__lte=5)
+    elif durum == 'normal':
+        varyantlar = varyantlar.filter(stok_miktari__gt=5)
+    
+    # Sıralama uygula
+    varyantlar = varyantlar.order_by(sort_field, 'urun__ad', 'renk__ad', 'beden__ad')
+    
+    # Dropdown için veriler
+    kategoriler = UrunKategoriUst.objects.all().order_by('ad')
+    markalar = Marka.objects.all().order_by('ad')
     
     context = {
-        'urunler': urunler,
+        'varyantlar': varyantlar,
+        'kategoriler': kategoriler,
+        'markalar': markalar,
+        'arama': arama,
+        'kategori_id': kategori_id,
+        'marka_id': marka_id,
         'durum': durum,
+        'sort_field': request.GET.get('sort', 'urun__ad'),
+        'sort_order': request.GET.get('order', 'asc'),
     }
     return render(request, 'rapor/stok_raporu.html', context)
 
@@ -222,7 +285,19 @@ def gunluk_satis_pdf(request):
 @login_required
 def stok_excel(request):
     """Stok raporu Excel export"""
-    urunler = Urun.objects.filter(aktif=True)
+    from urun.models import UrunVaryanti
+    
+    varyantlar = UrunVaryanti.objects.filter(
+        aktif=True, 
+        urun__aktif=True
+    ).select_related('urun', 'urun__kategori', 'urun__marka', 'renk', 'beden').order_by('urun__kategori__ad', 'urun__ad')
+    
+    # Filtreler
+    durum = request.GET.get('durum')
+    if durum == 'tukendi':
+        varyantlar = varyantlar.filter(stok_miktari=0)
+    elif durum == 'kritik':
+        varyantlar = varyantlar.filter(stok_miktari__gt=0, stok_miktari__lte=5)
     
     # Excel dosyası oluştur
     workbook = Workbook()
@@ -230,19 +305,38 @@ def stok_excel(request):
     worksheet.title = "Stok Raporu"
     
     # Başlıklar
-    headers = ['Barkod', 'Ürün Adı', 'Kategori', 'Stok Miktarı', 'Minimum Stok', 'Alış Fiyatı', 'Satış Fiyatı']
+    headers = ['Ürün Adı', 'Varyant', 'Barkod', 'Kategori', 'Marka', 'Alış Fiyatı', 'Satış Fiyatı', 'Kar Oranı %', 'Stok Miktarı', 'Durum']
     for col, header in enumerate(headers, 1):
         worksheet.cell(row=1, column=col, value=header)
     
     # Veriler
-    for row, urun in enumerate(urunler, 2):
-        worksheet.cell(row=row, column=1, value=urun.barkod)
-        worksheet.cell(row=row, column=2, value=urun.ad)
-        worksheet.cell(row=row, column=3, value=str(urun.kategori))
-        worksheet.cell(row=row, column=4, value=urun.stok_miktari)
-        worksheet.cell(row=row, column=5, value=urun.minimum_stok)
-        worksheet.cell(row=row, column=6, value=float(urun.alis_fiyati))
-        worksheet.cell(row=row, column=7, value=float(urun.satis_fiyati))
+    for row, varyant in enumerate(varyantlar, 2):
+        varyant_adi = ""
+        if varyant.renk:
+            varyant_adi += varyant.renk.ad
+        if varyant.renk and varyant.beden:
+            varyant_adi += " - "
+        if varyant.beden:
+            varyant_adi += varyant.beden.ad
+        if not varyant_adi:
+            varyant_adi = "Standart"
+            
+        durum_text = "Normal"
+        if varyant.stok_miktari == 0:
+            durum_text = "Tükendi"
+        elif varyant.stok_miktari <= 5:
+            durum_text = "Kritik"
+        
+        worksheet.cell(row=row, column=1, value=varyant.urun.ad)
+        worksheet.cell(row=row, column=2, value=varyant_adi)
+        worksheet.cell(row=row, column=3, value=varyant.barkod)
+        worksheet.cell(row=row, column=4, value=str(varyant.urun.kategori))
+        worksheet.cell(row=row, column=5, value=str(varyant.urun.marka) if varyant.urun.marka else "-")
+        worksheet.cell(row=row, column=6, value=float(varyant.urun.alis_fiyati))
+        worksheet.cell(row=row, column=7, value=float(varyant.urun.satis_fiyati))
+        worksheet.cell(row=row, column=8, value=float(varyant.urun.kar_orani))
+        worksheet.cell(row=row, column=9, value=varyant.stok_miktari)
+        worksheet.cell(row=row, column=10, value=durum_text)
     
     # Response
     response = HttpResponse(

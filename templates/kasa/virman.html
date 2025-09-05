@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Virman İşlemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .virman-form {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .kasa-bakiye {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 0.5rem;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+    }
+    
+    .bakiye-pozitif {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .bakiye-negatif {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .virman-arrow {
+        font-size: 2rem;
+        color: #007bff;
+        text-align: center;
+        padding: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-exchange-alt me-2"></i>Virman İşlemi</h2>
+                <a href="{% url 'kasa:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Kasalara Dön
+                </a>
+            </div>
+
+            <div class="virman-form">
+                <form method="post" id="virmanForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Kaynak Kasa -->
+                        <div class="col-md-5">
+                            <div class="form-group mb-3">
+                                <label class="form-label"><i class="fas fa-minus-circle text-danger"></i> Çıkış Yapılacak Kasa</label>
+                                <select name="kaynak_kasa" id="kaynakKasa" class="form-select" required>
+                                    <option value="">Kasa Seçin</option>
+                                    {% for kasa in kasalar %}
+                                    <option value="{{ kasa.id }}" data-bakiye="{{ kasa.guncel_bakiye }}">
+                                        {{ kasa.ad }} ({{ kasa.get_tip_display }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="kaynakBakiye" class="kasa-bakiye bakiye-pozitif" style="display: none;">
+                                    Bakiye: <span id="kaynakBakiyeTutar">0.00₺</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Virman Ok -->
+                        <div class="col-md-2">
+                            <div class="virman-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <!-- Hedef Kasa -->
+                        <div class="col-md-5">
+                            <div class="form-group mb-3">
+                                <label class="form-label"><i class="fas fa-plus-circle text-success"></i> Giriş Yapılacak Kasa</label>
+                                <select name="hedef_kasa" id="hedefKasa" class="form-select" required>
+                                    <option value="">Kasa Seçin</option>
+                                    {% for kasa in kasalar %}
+                                    <option value="{{ kasa.id }}" data-bakiye="{{ kasa.guncel_bakiye }}">
+                                        {{ kasa.ad }} ({{ kasa.get_tip_display }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="hedefBakiye" class="kasa-bakiye bakiye-pozitif" style="display: none;">
+                                    Bakiye: <span id="hedefBakiyeTutar">0.00₺</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tutar -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label"><i class="fas fa-lira-sign"></i> Virman Tutarı</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₺</span>
+                                    <input type="number" name="tutar" id="tutar" class="form-control" 
+                                           step="0.01" min="0.01" required placeholder="0.00">
+                                </div>
+                                <div id="tutarUyari" class="text-danger small mt-1" style="display: none;">
+                                    Yetersiz bakiye!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Açıklama -->
+                    <div class="form-group mb-4">
+                        <label class="form-label"><i class="fas fa-comment"></i> Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="3" 
+                                  placeholder="Virman sebebini açıklayın..." required></textarea>
+                    </div>
+
+                    <!-- İşlem Özeti -->
+                    <div id="islemOzeti" class="alert alert-info" style="display: none;">
+                        <h6><i class="fas fa-info-circle"></i> İşlem Özeti</h6>
+                        <div id="ozetMetin"></div>
+                    </div>
+
+                    <!-- Butonlar -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                            <i class="fas fa-times"></i> İptal
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="virmanBtn" disabled>
+                            <i class="fas fa-exchange-alt"></i> Virman Yap
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Kasa seçim değişikliklerini dinle
+    $('#kaynakKasa, #hedefKasa').on('change', function() {
+        updateBakiyeGoster();
+        kontrolEt();
+    });
+    
+    // Tutar değişikliklerini dinle
+    $('#tutar').on('input', function() {
+        kontrolEt();
+    });
+    
+    function updateBakiyeGoster() {
+        const kaynakKasa = $('#kaynakKasa');
+        const hedefKasa = $('#hedefKasa');
+        
+        if (kaynakKasa.val()) {
+            const bakiye = parseFloat(kaynakKasa.find(':selected').data('bakiye')) || 0;
+            $('#kaynakBakiyeTutar').text(bakiye.toFixed(2) + '₺');
+            $('#kaynakBakiye').show();
+        } else {
+            $('#kaynakBakiye').hide();
+        }
+        
+        if (hedefKasa.val()) {
+            const bakiye = parseFloat(hedefKasa.find(':selected').data('bakiye')) || 0;
+            $('#hedefBakiyeTutar').text(bakiye.toFixed(2) + '₺');
+            $('#hedefBakiye').show();
+        } else {
+            $('#hedefBakiye').hide();
+        }
+    }
+    
+    function kontrolEt() {
+        const kaynakKasa = $('#kaynakKasa').val();
+        const hedefKasa = $('#hedefKasa').val();
+        const tutar = parseFloat($('#tutar').val()) || 0;
+        const kaynakBakiye = parseFloat($('#kaynakKasa').find(':selected').data('bakiye')) || 0;
+        
+        let isValid = true;
+        
+        // Aynı kasa kontrolü
+        if (kaynakKasa && hedefKasa && kaynakKasa === hedefKasa) {
+            isValid = false;
+            showAlert('warning', 'Kaynak ve hedef kasa aynı olamaz!');
+        }
+        
+        // Yetersiz bakiye kontrolü
+        if (tutar > kaynakBakiye) {
+            isValid = false;
+            $('#tutarUyari').show();
+            $('#kaynakBakiye').removeClass('bakiye-pozitif').addClass('bakiye-negatif');
+        } else {
+            $('#tutarUyari').hide();
+            $('#kaynakBakiye').removeClass('bakiye-negatif').addClass('bakiye-pozitif');
+        }
+        
+        // Form kontrolü
+        if (kaynakKasa && hedefKasa && tutar > 0 && isValid) {
+            $('#virmanBtn').prop('disabled', false);
+            updateIslemOzeti();
+        } else {
+            $('#virmanBtn').prop('disabled', true);
+            $('#islemOzeti').hide();
+        }
+    }
+    
+    function updateIslemOzeti() {
+        const kaynakAd = $('#kaynakKasa').find(':selected').text();
+        const hedefAd = $('#hedefKasa').find(':selected').text();
+        const tutar = parseFloat($('#tutar').val()) || 0;
+        
+        const ozetHtml = `
+            <strong>${tutar.toFixed(2)}₺</strong> tutarında virman yapılacak:<br>
+            <i class="fas fa-minus-circle text-danger"></i> <strong>Çıkış:</strong> ${kaynakAd}<br>
+            <i class="fas fa-plus-circle text-success"></i> <strong>Giriş:</strong> ${hedefAd}
+        `;
+        
+        $('#ozetMetin').html(ozetHtml);
+        $('#islemOzeti').show();
+    }
+    
+    function showAlert(type, message) {
+        // Basit alert göster (gerçek projede toast kullanılabilir)
+        console.log(`${type}: ${message}`);
+    }
+});
+</script>
+{% endblock %}

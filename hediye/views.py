@@ -164,3 +164,15 @@ def hediye_ceki_ajax_sorgula(request):
         return JsonResponse({'success': False, 'message': 'Hediye çeki bulunamadı!'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Hata: {str(e)}'})
+
+
+@login_required
+def hediye_ceki_yazdir(request, pk):
+    """Hediye çeki yazdırma sayfası - 8cm termal yazıcı için optimize edilmiş"""
+    hediye_ceki = get_object_or_404(HediyeCeki, pk=pk)
+    
+    context = {
+        'hediye_ceki': hediye_ceki,
+    }
+    
+    return render(request, 'hediye/yazdir.html', context)

@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ urun.ad }} - Ürün Düzenle{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview {
+        width: 150px;
+        height: 150px;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        overflow: hidden;
+    }
+    
+    .image-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .no-image {
+        color: #6c757d;
+        font-size: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-edit text-warning me-2"></i>
+                Ürün Düzenle
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:liste' %}">Ürünler</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:detay' urun.id %}">{{ urun.ad }}</a></li>
+                    <li class="breadcrumb-item active">Düzenle</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Geri Dön
+            </a>
+            <a href="{% url 'urun:liste' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>Ürün Listesi
+            </a>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Ana Form -->
+            <div class="col-lg-8">
+                <div class="card form-card">
+                    <div class="card-body">
+                        
+                        <!-- Temel Bilgiler -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-info-circle me-2"></i>Temel Bilgiler</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="ad" class="form-label">Ürün Adı *</label>
+                                        <input type="text" class="form-control" id="ad" name="ad" 
+                                               value="{{ urun.ad }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="urun_kodu" class="form-label">Ürün Kodu</label>
+                                        <input type="text" class="form-control" id="urun_kodu" 
+                                               value="{{ urun.urun_kodu }}" readonly>
+                                        <small class="text-muted">Otomatik oluşturulur</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="aciklama" class="form-label">Açıklama</label>
+                                <textarea class="form-control" id="aciklama" name="aciklama" rows="3">{{ urun.aciklama }}</textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="kategori" class="form-label">Kategori *</label>
+                                        <select class="form-select" id="kategori" name="kategori" required>
+                                            <option value="">Kategori Seçin</option>
+                                            {% for kategori in kategoriler %}
+                                                <option value="{{ kategori.id }}" 
+                                                        {% if kategori.id == urun.kategori.id %}selected{% endif %}>
+                                                    {{ kategori.ad }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="marka" class="form-label">Marka</label>
+                                        <select class="form-select" id="marka" name="marka">
+                                            <option value="">Marka Seçin</option>
+                                            {% for marka in markalar %}
+                                                <option value="{{ marka.id }}" 
+                                                        {% if urun.marka and marka.id == urun.marka.id %}selected{% endif %}>
+                                                    {{ marka.ad }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="cinsiyet" class="form-label">Cinsiyet</label>
+                                        <select class="form-select" id="cinsiyet" name="cinsiyet">
+                                            <option value="kadin" {% if urun.cinsiyet == 'kadin' %}selected{% endif %}>Kadın</option>
+                                            <option value="erkek" {% if urun.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                                            <option value="unisex" {% if urun.cinsiyet == 'unisex' %}selected{% endif %}>Unisex</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="birim" class="form-label">Birim</label>
+                                        <select class="form-select" id="birim" name="birim">
+                                            <option value="adet" {% if urun.birim == 'adet' %}selected{% endif %}>Adet</option>
+                                            <option value="takim" {% if urun.birim == 'takim' %}selected{% endif %}>Takım</option>
+                                            <option value="cift" {% if urun.birim == 'cift' %}selected{% endif %}>Çift</option>
+                                            <option value="kg" {% if urun.birim == 'kg' %}selected{% endif %}>Kilogram</option>
+                                            <option value="gr" {% if urun.birim == 'gr' %}selected{% endif %}>Gram</option>
+                                            <option value="lt" {% if urun.birim == 'lt' %}selected{% endif %}>Litre</option>
+                                            <option value="ml" {% if urun.birim == 'ml' %}selected{% endif %}>Mililitre</option>
+                                            <option value="m" {% if urun.birim == 'm' %}selected{% endif %}>Metre</option>
+                                            <option value="cm" {% if urun.birim == 'cm' %}selected{% endif %}>Santimetre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Varyasyon Durumu</label>
+                                        <div class="form-control d-flex align-items-center">
+                                            {% if urun.varyasyonlu %}
+                                                <span class="badge bg-success me-2">Varyasyonlu Ürün</span>
+                                                <small class="text-muted">Bu ürün renk/beden varyasyonları içerir</small>
+                                            {% else %}
+                                                <span class="badge bg-secondary me-2">Standart Ürün</span>
+                                                <small class="text-muted">Bu ürün varyasyonsuz</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fiyat Bilgileri -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-money-bill-wave me-2"></i>Fiyat Bilgileri</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="alis_fiyati" class="form-label">Alış Fiyatı (₺) *</label>
+                                        <input type="number" class="form-control" id="alis_fiyati" name="alis_fiyati" 
+                                               step="0.01" min="0" value="{{ urun.alis_fiyati }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="kar_orani" class="form-label">Kar Oranı (%)</label>
+                                        <input type="number" class="form-control" id="kar_orani" name="kar_orani" 
+                                               step="0.01" min="0" value="{{ urun.kar_orani }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="satis_fiyati" class="form-label">Satış Fiyatı (₺) *</label>
+                                        <input type="number" class="form-control" id="satis_fiyati" name="satis_fiyati" 
+                                               step="0.01" min="0" value="{{ urun.satis_fiyati }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stok ve Durum Ayarları -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-warehouse me-2"></i>Stok ve Durum Ayarları</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="kritik_stok_seviyesi" class="form-label">Kritik Stok Seviyesi</label>
+                                        <input type="number" class="form-control" id="kritik_stok_seviyesi" 
+                                               name="kritik_stok_seviyesi" min="0" value="{{ urun.kritik_stok_seviyesi }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mevcut Toplam Stok</label>
+                                        <div class="form-control-plaintext">
+                                            <span class="h5 text-primary">{{ urun.toplam_stok }} adet</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="stok_takibi" 
+                                               name="stok_takibi" {% if urun.stok_takibi %}checked{% endif %}>
+                                        <label class="form-check-label" for="stok_takibi">
+                                            Stok Takibi Yapılsın
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="aktif" 
+                                               name="aktif" {% if urun.aktif %}checked{% endif %}>
+                                        <label class="form-check-label" for="aktif">
+                                            Ürün Aktif
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Butonları -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Değişiklikleri Kaydet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Yan Panel -->
+            <div class="col-lg-4">
+                <!-- Ürün Görseli -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-image me-2"></i>Ürün Görseli</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="image-preview mx-auto mb-3">
+                            {% if urun.resim %}
+                                <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}">
+                            {% else %}
+                                <i class="fas fa-image no-image"></i>
+                            {% endif %}
+                        </div>
+                        <input type="file" class="form-control" name="resim" accept="image/*">
+                        <small class="text-muted">JPG, PNG formatları desteklenir</small>
+                    </div>
+                </div>
+                
+                <!-- Ürün Bilgi Özeti -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Ürün Özeti</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Ürün Kodu:</strong></td>
+                                <td>{{ urun.urun_kodu }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Oluşturma:</strong></td>
+                                <td>{{ urun.olusturma_tarihi|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Son Güncelleme:</strong></td>
+                                <td>{{ urun.guncelleme_tarihi|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Toplam Stok:</strong></td>
+                                <td>
+                                    <span class="badge bg-primary">{{ urun.toplam_stok }} adet</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Varyant Sayısı:</strong></td>
+                                <td>{{ urun.varyantlar.count }} adet</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Fiyat hesaplama
+document.getElementById('alis_fiyati').addEventListener('input', hesaplaKar);
+document.getElementById('kar_orani').addEventListener('input', hesaplaSatisFiyati);
+document.getElementById('satis_fiyati').addEventListener('input', hesaplaKarOrani);
+
+function hesaplaKar() {
+    const alisFiyati = parseFloat(document.getElementById('alis_fiyati').value) || 0;
+    const satisFiyati = parseFloat(document.getElementById('satis_fiyati').value) || 0;
+    
+    if (alisFiyati > 0 && satisFiyati > 0) {
+        const karOrani = ((satisFiyati - alisFiyati) / alisFiyati) * 100;
+        document.getElementById('kar_orani').value = karOrani.toFixed(2);
+    }
+}
+
+function hesaplaSatisFiyati() {
+    const alisFiyati = parseFloat(document.getElementById('alis_fiyati').value) || 0;
+    const karOrani = parseFloat(document.getElementById('kar_orani').value) || 0;
+    
+    if (alisFiyati > 0) {
+        const satisFiyati = alisFiyati * (1 + karOrani / 100);
+        document.getElementById('satis_fiyati').value = satisFiyati.toFixed(2);
+    }
+}
+
+function hesaplaKarOrani() {
+    const alisFiyati = parseFloat(document.getElementById('alis_fiyati').value) || 0;
+    const satisFiyati = parseFloat(document.getElementById('satis_fiyati').value) || 0;
+    
+    if (alisFiyati > 0 && satisFiyati > 0) {
+        const karOrani = ((satisFiyati - alisFiyati) / alisFiyati) * 100;
+        document.getElementById('kar_orani').value = karOrani.toFixed(2);
+    }
+}
+</script>
+{% endblock %}

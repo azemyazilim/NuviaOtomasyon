@@ -9,6 +9,8 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from .models import Gider, GiderKategori
 from .forms import GiderForm, GiderKategoriForm, GiderAramaForm
+from kasa.models import Kasa, KasaHareket
+from log.models import AktiviteLog
 
 
 # @login_required  # Geçici olarak kaldırıldı - test için
@@ -79,6 +81,26 @@ def gider_ekle(request):
             gider = form.save(commit=False)
             gider.olusturan = request.user if request.user.is_authenticated else None
             gider.save()
+            
+            # Kasa hareketi oluştur
+            kasa = None
+            if gider.odeme_yontemi == 'nakit':
+                kasa = Kasa.objects.filter(tip='nakit', aktif=True).first()
+            elif gider.odeme_yontemi == 'kredi_karti':
+                kasa = Kasa.objects.filter(tip='kart', aktif=True).first()
+            elif gider.odeme_yontemi == 'banka_havalesi':
+                kasa = Kasa.objects.filter(tip='banka', aktif=True).first()
+            
+            if kasa:
+                KasaHareket.objects.create(
+                    kasa=kasa,
+                    tip='cikis',
+                    kaynak='gider',
+                    tutar=gider.tutar,
+                    aciklama=f'Gider - {gider.baslik}',
+                    gider_id=gider.id,
+                    kullanici=request.user if request.user.is_authenticated else None
+                )
             
             # Aktivite logu
             if request.user.is_authenticated:

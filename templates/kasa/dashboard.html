@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Kasa Yönetimi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kasa-card {
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .kasa-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .kasa-nakit {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .kasa-pos {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+    }
+    
+    .kasa-kart {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a2a8b 100%);
+        color: white;
+    }
+    
+    .kasa-banka {
+        background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+        color: white;
+    }
+    
+    .bakiye-display {
+        font-size: 2rem;
+        font-weight: bold;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .hareket-pozitif {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .hareket-negatif {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .action-buttons .btn {
+        margin: 0.25rem;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .recent-movements {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Başlık ve Hızlı Aksiyonlar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-wallet me-2"></i>Kasa Yönetimi</h2>
+                <div class="action-buttons">
+                    <a href="{% url 'kasa:virman' %}" class="btn btn-warning">
+                        <i class="fas fa-exchange-alt"></i> Virman
+                    </a>
+                    <a href="{% url 'kasa:para_girisi' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Para Girişi
+                    </a>
+                    <a href="{% url 'kasa:para_cikisi' %}" class="btn btn-danger">
+                        <i class="fas fa-minus"></i> Para Çıkışı
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toplam Özet -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="stats-card">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <h5>Genel Toplam</h5>
+                        <h3>{{ genel_toplam|floatformat:2 }}₺</h3>
+                    </div>
+                    <div class="col-md-2">
+                        <h6>Nakit</h6>
+                        <h4>{{ toplam_nakit|floatformat:2 }}₺</h4>
+                    </div>
+                    <div class="col-md-2">
+                        <h6>POS Kartı</h6>
+                        <h4>{{ toplam_pos|floatformat:2 }}₺</h4>
+                    </div>
+                    <div class="col-md-2">
+                        <h6>Harcama Kartı</h6>
+                        <h4>{{ toplam_kart|floatformat:2 }}₺</h4>
+                    </div>
+                    <div class="col-md-2">
+                        <h6>Banka</h6>
+                        <h4>{{ toplam_banka|floatformat:2 }}₺</h4>
+                    </div>
+                    <div class="col-md-2">
+                        <h6>Aktif Kasa</h6>
+                        <h4>{{ kasa_bilgileri|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kasa Kartları -->
+    <div class="row mb-4">
+        {% for item in kasa_bilgileri %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="card kasa-card kasa-{{ item.kasa.tip }}">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        {% if item.kasa.tip == 'nakit' %}
+                            <i class="fas fa-money-bill-wave"></i>
+                        {% elif item.kasa.tip == 'pos' %}
+                            <i class="fas fa-credit-card"></i>
+                        {% elif item.kasa.tip == 'kart' %}
+                            <i class="fas fa-credit-card"></i>
+                        {% elif item.kasa.tip == 'banka' %}
+                            <i class="fas fa-university"></i>
+                        {% else %}
+                            <i class="fas fa-wallet"></i>
+                        {% endif %}
+                        {{ item.kasa.ad }}
+                    </h5>
+                    
+                    <div class="bakiye-display">
+                        {{ item.bakiye|floatformat:2 }}₺
+                    </div>
+                    
+                    <hr style="border-color: rgba(255,255,255,0.3);">
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <small>Bugün Giriş</small>
+                            <div class="hareket-pozitif">+{{ item.bugunki_giris|floatformat:2 }}₺</div>
+                        </div>
+                        <div class="col-6">
+                            <small>Bugün Çıkış</small>
+                            <div class="hareket-negatif">-{{ item.bugunki_cikis|floatformat:2 }}₺</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small>Net Hareket: </small>
+                        <span class="{% if item.bugunki_net >= 0 %}hareket-pozitif{% else %}hareket-negatif{% endif %}">
+                            {{ item.bugunki_net|floatformat:2 }}₺
+                        </span>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'kasa:detay' item.kasa.id %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-eye"></i> Detay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <h4><i class="fas fa-info-circle"></i> Henüz Kasa Tanımlanmamış</h4>
+                <p>Kasa işlemlerine başlamak için admin panelden kasa tanımlamaları yapın.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Son Hareketler -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Son Hareketler</h5>
+                </div>
+                <div class="card-body recent-movements">
+                    {% if son_hareketler %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Kasa</th>
+                                    <th>İşlem</th>
+                                    <th>Kaynak</th>
+                                    <th class="text-end">Tutar</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hareket in son_hareketler %}
+                                <tr>
+                                    <td>
+                                        <small>{{ hareket.tarih|date:"d.m.Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ hareket.kasa.ad }}</span>
+                                    </td>
+                                    <td>
+                                        {% if hareket.tip == 'giris' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-arrow-down"></i> Giriş
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-arrow-up"></i> Çıkış
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ hareket.get_kaynak_display }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="{% if hareket.tip == 'giris' %}text-success{% else %}text-danger{% endif %}">
+                                            {% if hareket.tip == 'giris' %}+{% else %}-{% endif %}{{ hareket.tutar|floatformat:2 }}₺
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ hareket.aciklama|truncatechars:50 }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Henüz kasa hareketi bulunmuyor.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

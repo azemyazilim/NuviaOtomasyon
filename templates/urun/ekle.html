@@ -270,7 +270,7 @@
                     <div class="form-floating">
                         <select class="form-select" id="kategori" name="kategori" required>
                             <option value="">Kategori Seçin</option>
-                            {% for kategori in ust_kategoriler %}
+                            {% for kategori in kategoriler %}
                                 <option value="{{ kategori.id }}" 
                                     {% if urun and urun.kategori and urun.kategori.id == kategori.id %}selected{% endif %}>
                                     {{ kategori.ad }}
@@ -308,7 +308,6 @@
                         <select class="form-select" id="cinsiyet" name="cinsiyet">
                             <option value="kadin" {% if urun and urun.cinsiyet == 'kadin' %}selected{% elif not urun %}selected{% endif %}>Kadın</option>
                             <option value="erkek" {% if urun and urun.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
-                            <option value="unisex" {% if urun and urun.cinsiyet == 'unisex' %}selected{% endif %}>Unisex</option>
                         </select>
                         <label for="cinsiyet">
                             <i class="fas fa-venus-mars me-1"></i>Cinsiyet

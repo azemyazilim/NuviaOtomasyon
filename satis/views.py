@@ -6,8 +6,9 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from .models import Satis, SatisDetay, Odeme, SiparisNumarasi
-from urun.models import Urun
+from urun.models import Urun, UrunVaryanti
 from musteri.models import Musteri
+from kasa.models import Kasa, KasaHareket
 
 
 # @login_required  # TEST İÇİN GEÇİCİ OLARAK KALDIRILDI
@@ -137,12 +138,19 @@ def satis_listesi(request):
 def satis_detay(request, pk):
     """Satış detay view'ı"""
     satis = get_object_or_404(Satis, pk=pk)
+    satis_detaylari = satis.satisdetay_set.all().select_related('urun')
+    
+    # İndirim hesaplamaları
+    toplam_urun_indirimi = sum(detay.indirim_tutari for detay in satis_detaylari)
+    genel_indirim = satis.indirim_tutari - toplam_urun_indirimi if satis.indirim_tutari > toplam_urun_indirimi else 0
     
     context = {
         'satis': satis,
-        'satis_detaylari': satis.satisdetay_set.all().select_related('urun'),
+        'satis_detaylari': satis_detaylari,
         'odemeler': satis.odeme_set.all(),
-        'toplam_urun_adedi': satis.satisdetay_set.count(),
+        'toplam_urun_adedi': satis_detaylari.count(),
+        'toplam_urun_indirimi': toplam_urun_indirimi,
+        'genel_indirim': genel_indirim,
     }
     return render(request, 'satis/satis_detay.html', context)
 
@@ -191,7 +199,7 @@ def satis_tamamla(request):
                 if isinstance(item, dict):  # JSON format
                     fiyat = Decimal(str(item['fiyat']))
                     miktar = int(item['miktar'])
-                    urun_indirimi = Decimal(str(item.get('indirim', 0)))
+                    urun_indirimi = Decimal(str(item.get('urun_indirim', item.get('indirim', 0))))
                     toplam_urun_indirimi += urun_indirimi
                     ara_toplam += (fiyat * miktar) - urun_indirimi
                 else:  # Session format
@@ -203,36 +211,41 @@ def satis_tamamla(request):
             genel_indirim = Decimal(str(data.get('genel_indirim', 0)))
             toplam_indirim = toplam_urun_indirimi + genel_indirim
             
-            # Genel indirim sonrası ara toplam
+            # Genel indirim sonrası ara toplam (KDV hesaplaması kaldırıldı)
             indirim_sonrasi_toplam = ara_toplam - genel_indirim
             
-            kdv_orani = Decimal('18.0')  # %18 KDV
-            kdv_tutari = indirim_sonrasi_toplam * kdv_orani / 100
-            genel_toplam = indirim_sonrasi_toplam + kdv_tutari
+            # Fiyatlar zaten KDV dahil olduğu için ayrıca KDV hesaplaması yapılmıyor
+            genel_toplam = indirim_sonrasi_toplam
+            
+            # Açıklama bilgisini al
+            aciklama = data.get('aciklama', '').strip() if data else ''
             
             # Satış oluştur
             satis = Satis.objects.create(
                 musteri=musteri,
                 ara_toplam=ara_toplam,  # İndirim öncesi ara toplam
                 indirim_tutari=toplam_indirim,  # Toplam indirim
-                kdv_orani=kdv_orani,
-                kdv_tutari=kdv_tutari,
+                kdv_orani=Decimal('0'),  # KDV ayrı hesaplanmıyor
+                kdv_tutari=Decimal('0'),  # KDV ayrı hesaplanmıyor
                 genel_toplam=genel_toplam,
                 toplam_tutar=genel_toplam,
                 durum='tamamlandi',
                 satici=request.user,
                 satis_tarihi=datetime.now(),
+                notlar=aciklama,  # Açıklama/not bilgisini kaydet
             )
             
             # Satış detaylarını oluştur ve stokları güncelle
             for item in sepet_data:
                 if isinstance(item, dict):  # JSON format
                     urun = Urun.objects.get(pk=item['id'])
+                    varyant_id = item.get('varyant_id')
                     miktar = int(item['miktar'])
                     birim_fiyat = Decimal(str(item['fiyat']))
-                    indirim_tutari = Decimal(str(item.get('indirim', 0)))
+                    indirim_tutari = Decimal(str(item.get('urun_indirim', item.get('indirim', 0))))
                 else:  # Session format
                     urun = Urun.objects.get(pk=item)
+                    varyant_id = sepet_data[item].get('varyant_id')
                     miktar = int(sepet_data[item]['miktar'])
                     birim_fiyat = Decimal(str(sepet_data[item]['fiyat']))
                     indirim_tutari = Decimal('0')
@@ -240,13 +253,30 @@ def satis_tamamla(request):
                 indirimsiz_toplam = birim_fiyat * miktar
                 toplam_fiyat = indirimsiz_toplam - indirim_tutari
                 
-                # Stok kontrolü
-                if urun.stok_miktari < miktar:
-                    satis.delete()  # Satışı iptal et
-                    return JsonResponse({
-                        'success': False, 
-                        'message': f'{urun.ad} için yeterli stok yok! Mevcut: {urun.stok_miktari}'
-                    })
+                # Varyant bazlı stok kontrolü
+                if varyant_id:
+                    try:
+                        varyant = UrunVaryanti.objects.get(pk=varyant_id, aktif=True)
+                        if varyant.stok_miktari < miktar:
+                            satis.delete()  # Satışı iptal et
+                            return JsonResponse({
+                                'success': False, 
+                                'message': f'{urun.ad} ({varyant.varyasyon_adi}) için yeterli stok yok! Mevcut: {varyant.stok_miktari}'
+                            })
+                    except UrunVaryanti.DoesNotExist:
+                        satis.delete()  # Satışı iptal et
+                        return JsonResponse({
+                            'success': False, 
+                            'message': f'{urun.ad} için geçerli varyant bulunamadı!'
+                        })
+                else:
+                    # Toplam stok kontrolü
+                    if urun.toplam_stok < miktar:
+                        satis.delete()  # Satışı iptal et
+                        return JsonResponse({
+                            'success': False, 
+                            'message': f'{urun.ad} için yeterli stok yok! Mevcut: {urun.toplam_stok}'
+                        })
                 
                 # Satış detayı oluştur
                 SatisDetay.objects.create(
@@ -258,21 +288,28 @@ def satis_tamamla(request):
                     toplam_fiyat=toplam_fiyat
                 )
                 
-                # Stoktan düş
-                urun.stok_miktari -= miktar
-                urun.save()
+                # Varyant stoktan düş
+                if varyant_id:
+                    varyant.stok_miktari -= miktar
+                    varyant.save()
+                else:
+                    # İlk varyantın stokunu düş
+                    first_variant = urun.varyantlar.filter(aktif=True, stok_miktari__gt=0).first()
+                    if first_variant:
+                        first_variant.stok_miktari -= miktar
+                        first_variant.save()
             
             # Ödeme kayıtlarını oluştur
             if odeme_detaylari.get('tip') == 'karma':
-                # Karma ödeme
-                nakit_tutar = Decimal(str(odeme_detaylari.get('nakit_tutar', 0)))
-                kart_tutar = Decimal(str(odeme_detaylari.get('kart_tutar', 0)))
-                hediye_ceki_tutar = Decimal(str(odeme_detaylari.get('hediye_ceki_tutar', 0)))
-                kart_taksit_sayisi = odeme_detaylari.get('kart_taksit_sayisi', 1)
-                hediye_cekleri = odeme_detaylari.get('hediye_cekleri', [])
+                # Karma ödeme detaylarını al
+                karma_detay = odeme_detaylari.get('karma_detay', {})
+                nakit_tutar = Decimal(str(karma_detay.get('nakit', 0)))
+                kart_tutar = Decimal(str(karma_detay.get('kart', 0)))
+                havale_tutar = Decimal(str(karma_detay.get('havale', 0)))
+                hediye_ceki_tutar = Decimal(str(karma_detay.get('hediye_ceki', 0)))
                 
-                # Karma ödeme validasyonu - hediye çeki dahil
-                toplam_odeme = nakit_tutar + kart_tutar + hediye_ceki_tutar
+                # Karma ödeme validasyonu
+                toplam_odeme = nakit_tutar + kart_tutar + havale_tutar + hediye_ceki_tutar
                 if abs(toplam_odeme - genel_toplam) > Decimal('0.01'):
                     satis.delete()
                     return JsonResponse({
@@ -287,6 +324,18 @@ def satis_tamamla(request):
                         odeme_tipi='nakit',
                         tutar=nakit_tutar,
                     )
+                    # Kasa hareketi - nakit kasasına giriş
+                    nakit_kasa = Kasa.objects.filter(tip='nakit', aktif=True).first()
+                    if nakit_kasa:
+                        KasaHareket.objects.create(
+                            kasa=nakit_kasa,
+                            tip='giris',
+                            kaynak='satis',
+                            tutar=nakit_tutar,
+                            aciklama=f'Satış #{satis.satis_no} - Nakit Ödeme',
+                            satis_id=satis.id,
+                            kullanici=request.user
+                        )
                 
                 # Kart ödeme kaydı
                 if kart_tutar > 0:
@@ -294,51 +343,97 @@ def satis_tamamla(request):
                         satis=satis,
                         odeme_tipi='kart',
                         tutar=kart_tutar,
-                        taksit_sayisi=kart_taksit_sayisi if kart_taksit_sayisi > 1 else None,
                     )
+                    # Kasa hareketi - POS kasasına giriş
+                    pos_kasa = Kasa.objects.filter(tip='pos', aktif=True).first()
+                    if pos_kasa:
+                        KasaHareket.objects.create(
+                            kasa=pos_kasa,
+                            tip='giris',
+                            kaynak='satis',
+                            tutar=kart_tutar,
+                            aciklama=f'Satış #{satis.satis_no} - Kart Ödeme',
+                            satis_id=satis.id,
+                            kullanici=request.user
+                        )
                 
-                # Hediye çeki ödemeleri
-                if hediye_ceki_tutar > 0 and hediye_cekleri:
+                # Havale ödeme kaydı
+                if havale_tutar > 0:
+                    Odeme.objects.create(
+                        satis=satis,
+                        odeme_tipi='havale',
+                        tutar=havale_tutar,
+                    )
+                    # Kasa hareketi - banka kasasına giriş
+                    banka_kasa = Kasa.objects.filter(tip='banka', aktif=True).first()
+                    if banka_kasa:
+                        KasaHareket.objects.create(
+                            kasa=banka_kasa,
+                            tip='giris',
+                            kaynak='satis',
+                            tutar=havale_tutar,
+                            aciklama=f'Satış #{satis.satis_no} - Havale Ödeme',
+                            satis_id=satis.id,
+                            kullanici=request.user
+                        )
+                
+                # Hediye çeki ödemesi
+                if hediye_ceki_tutar > 0 and data.get('hediye_ceki'):
                     from hediye.models import HediyeCeki, HediyeCekiKullanim
                     
-                    for hediye_ceki_data in hediye_cekleri:
-                        try:
-                            hediye_ceki = HediyeCeki.objects.get(
-                                kod=hediye_ceki_data['kod'],
-                                durum='aktif'
-                            )
-                            
-                            kullanilan_tutar = Decimal(str(hediye_ceki_data.get('kullanilan_tutar', hediye_ceki.kalan_tutar)))
-                            
-                            # Hediye çeki kullanım kaydı oluştur
-                            HediyeCekiKullanim.objects.create(
-                                hediye_ceki=hediye_ceki,
-                                kullanilan_tutar=kullanilan_tutar,
-                                satis_id=satis.id,
-                                kullanan=request.user,
-                                aciklama=f'Satış #{satis.satis_no} - Karma Ödeme'
-                            )
-                            
-                            # Hediye çeki bakiyesini güncelle
-                            hediye_ceki.kalan_tutar -= kullanilan_tutar
-                            if hediye_ceki.kalan_tutar <= 0:
-                                hediye_ceki.durum = 'kullanilmis'
-                            hediye_ceki.save()
-                            
-                            # Ödeme kaydı oluştur
-                            Odeme.objects.create(
-                                satis=satis,
-                                odeme_tipi='hediye_ceki',
-                                tutar=kullanilan_tutar,
-                                hediye_ceki_kodu=hediye_ceki.kod
-                            )
-                            
-                        except HediyeCeki.DoesNotExist:
-                            satis.delete()
-                            return JsonResponse({
-                                'success': False, 
-                                'message': f'Hediye çeki bulunamadı: {hediye_ceki_data["kod"]}'
-                            })
+                    hediye_ceki_data = data.get('hediye_ceki')
+                    try:
+                        hediye_ceki = HediyeCeki.objects.get(
+                            kod=hediye_ceki_data['kod'],
+                            durum='aktif'
+                        )
+                        
+                        # Hediye çeki kullanım kaydı oluştur
+                        HediyeCekiKullanim.objects.create(
+                            hediye_ceki=hediye_ceki,
+                            kullanilan_tutar=hediye_ceki_tutar,
+                            satis_id=satis.id,
+                            kullanan=request.user,
+                            aciklama=f'Satış #{satis.satis_no} - Karma Ödeme'
+                        )
+                        
+                        # Hediye çeki bakiyesini güncelle
+                        hediye_ceki.kalan_tutar -= hediye_ceki_tutar
+                        if hediye_ceki.kalan_tutar <= 0:
+                            hediye_ceki.durum = 'kullanilmis'
+                        hediye_ceki.save()
+                        
+                        # Ödeme kaydı oluştur
+                        Odeme.objects.create(
+                            satis=satis,
+                            odeme_tipi='hediye_ceki',
+                            tutar=hediye_ceki_tutar,
+                            hediye_ceki_kodu=hediye_ceki.kod
+                        )
+                        
+                    except HediyeCeki.DoesNotExist:
+                        satis.delete()
+                        return JsonResponse({
+                            'success': False, 
+                            'message': f'Hediye çeki bulunamadı: {hediye_ceki_data["kod"]}'
+                        })
+                        
+            elif odeme_detaylari.get('odeme_yontemi') == 'acik_hesap':
+                # Açık hesap - müşteri gerekli
+                if not musteri:
+                    return JsonResponse({'success': False, 'message': 'Açık hesap satışı için müşteri seçmelisiniz!'})
+                
+                # Açık hesap bakiyesini güncelle (borç ekle)
+                musteri.acik_hesap_bakiye = (musteri.acik_hesap_bakiye or Decimal('0')) + genel_toplam
+                musteri.save()
+                
+                # Ödeme kaydı oluştur
+                Odeme.objects.create(
+                    satis=satis,
+                    odeme_tipi='acik_hesap',
+                    tutar=genel_toplam,
+                    aciklama=f'Açık hesap borcu - {musteri.ad} {musteri.soyad}'
+                )
                     
             else:
                 # Tek ödeme
@@ -348,6 +443,8 @@ def satis_tamamla(request):
                 # Ödeme tipi dönüşümü
                 if odeme_yontemi in ['kart', 'kredi_karti']:
                     odeme_tipi = 'kart'
+                elif odeme_yontemi == 'havale':
+                    odeme_tipi = 'havale'
                 elif odeme_yontemi == 'hediye_ceki':
                     odeme_tipi = 'hediye_ceki'
                 elif odeme_yontemi == 'acik_hesap':
@@ -373,6 +470,29 @@ def satis_tamamla(request):
                         tutar=genel_toplam,
                         taksit_sayisi=taksit_sayisi if odeme_tipi == 'kart' and taksit_sayisi > 1 else None,
                     )
+                    
+                    # Kasa hareketi oluştur
+                    kasa = None
+                    if odeme_tipi == 'nakit':
+                        kasa = Kasa.objects.filter(tip='nakit', aktif=True).first()
+                        aciklama = f'Satış #{satis.satis_no} - Nakit Ödeme'
+                    elif odeme_tipi == 'kart':
+                        kasa = Kasa.objects.filter(tip='pos', aktif=True).first()
+                        aciklama = f'Satış #{satis.satis_no} - Kart Ödeme'
+                    elif odeme_tipi == 'havale':
+                        kasa = Kasa.objects.filter(tip='banka', aktif=True).first()
+                        aciklama = f'Satış #{satis.satis_no} - Havale Ödeme'
+                    
+                    if kasa:
+                        KasaHareket.objects.create(
+                            kasa=kasa,
+                            tip='giris',
+                            kaynak='satis',
+                            tutar=genel_toplam,
+                            aciklama=aciklama,
+                            satis_id=satis.id,
+                            kullanici=request.user
+                        )
             
             # Session'ı temizle
             if 'sepet' in request.session:
@@ -422,8 +542,8 @@ def iade_ana_sayfa(request):
     # Temel sorgu - sadece tamamlanmış satışlar
     satislar = Satis.objects.filter(
         durum='tamamlandi',
-        tarih__gte=son_tarih
-    ).order_by('-tarih')
+        satis_tarihi__gte=son_tarih
+    ).order_by('-satis_tarihi')
     
     # Arama filtresi
     if search:
@@ -533,9 +653,14 @@ def satis_iade(request, pk):
             
             # Stok güncellemeleri ve satış kalem düzenlemeleri
             for item in iade_edilecek_urunler:
-                # Stok güncelle
-                item['kalem'].urun.stok_miktari += item['miktar']
-                item['kalem'].urun.save()
+                # Varyant bazlı stok güncelle
+                # SatisDetay'da hangi varyantın satıldığını bulmalıyız
+                # Bu bilgi direkt SatisDetay'da yok, bu yüzden ilk varyanta ekleyelim
+                urun = item['kalem'].urun
+                first_variant = urun.varyantlar.filter(aktif=True).first()
+                if first_variant:
+                    first_variant.stok_miktari += item['miktar']
+                    first_variant.save()
                 
                 # Kalem güncelle
                 if item['miktar'] == item['kalem'].miktar:
@@ -746,10 +871,19 @@ def satis_yazdir(request, pk):
         messages.error(request, 'Sadece tamamlanmış satışlar yazdırılabilir.')
         return redirect('satis:detay', pk=pk)
     
+    # Satış detayları
+    satis_detaylari = satis.satisdetay_set.all().select_related('urun')
+    
+    # İndirim hesaplamaları
+    toplam_urun_indirimi = sum(detay.indirim_tutari for detay in satis_detaylari)
+    genel_indirim = satis.indirim_tutari - toplam_urun_indirimi if satis.indirim_tutari > toplam_urun_indirimi else 0
+    
     context = {
         'satis': satis,
-        'satis_detaylari': satis.satisdetay_set.all().select_related('urun'),
+        'satis_detaylari': satis_detaylari,
         'odemeler': satis.odeme_set.all(),
+        'toplam_urun_indirimi': toplam_urun_indirimi,
+        'genel_indirim': genel_indirim,
     }
     return render(request, 'satis/satis_yazdir.html', context)
 
@@ -757,26 +891,35 @@ def satis_yazdir(request, pk):
 # @login_required  # TEST İÇİN GEÇİCİ OLARAK KALDIRILDI
 def barkod_sorgula(request):
     """Barkod sorgulama AJAX view'ı"""
+    from urun.models import UrunVaryanti
+    
     barkod = request.GET.get('barkod')
     
     if barkod:
         try:
-            urun = Urun.objects.get(barkod=barkod, aktif=True)
-            if urun.stok_miktari > 0:
+            # Barkod UrunVaryanti modelinde bulunuyor
+            varyant = UrunVaryanti.objects.get(barkod=barkod, aktif=True)
+            urun = varyant.urun
+            
+            if varyant.stok_miktari > 0 and urun.aktif:
                 data = {
                     'success': True,
                     'urun': {
                         'id': urun.id,
+                        'varyant_id': varyant.id,
                         'ad': urun.ad,
-                        'barkod': urun.barkod,
+                        'varyasyon': varyant.varyasyon_adi,
+                        'beden': varyant.beden.ad if varyant.beden else 'Tek Beden',
+                        'renk': varyant.renk.ad if varyant.renk else 'Standart',
+                        'barkod': varyant.barkod,
                         'satis_fiyati': str(urun.satis_fiyati),
-                        'stok_miktari': urun.stok_miktari,
+                        'stok_miktari': varyant.stok_miktari,
                         'kategori': str(urun.kategori)
                     }
                 }
             else:
                 data = {'success': False, 'message': 'Ürün stokta yok!'}
-        except Urun.DoesNotExist:
+        except UrunVaryanti.DoesNotExist:
             data = {'success': False, 'message': 'Barkod bulunamadı!'}
     else:
         data = {'success': False, 'message': 'Barkod girilmedi!'}
@@ -788,25 +931,33 @@ def barkod_sorgula(request):
 # @login_required  # TEST İÇİN GEÇİCİ OLARAK KALDIRILDI
 def urun_ara(request):
     """Ürün arama AJAX view'ı"""
+    from urun.models import UrunVaryanti
+    
     query = request.GET.get('q', '')
     
     if len(query) >= 2:
-        urunler = Urun.objects.filter(
-            Q(ad__icontains=query) | Q(barkod__icontains=query) | Q(sku__icontains=query),
+        # Hem ürün adı hem de barkod ile arama yap
+        varyantlar = UrunVaryanti.objects.filter(
+            Q(urun__ad__icontains=query) | Q(barkod__icontains=query) | Q(urun__urun_kodu__icontains=query),
             aktif=True,
+            urun__aktif=True,
             stok_miktari__gt=0
         )[:10]
         
         data = []
-        for urun in urunler:
+        for varyant in varyantlar:
             data.append({
-                'id': urun.id,
-                'ad': urun.ad,
-                'barkod': urun.barkod,
-                'sku': urun.sku,
-                'satis_fiyati': str(urun.satis_fiyati),
-                'stok_miktari': urun.stok_miktari,
-                'kategori': str(urun.kategori) if urun.kategori else 'Kategori Yok'
+                'id': varyant.urun.id,
+                'varyant_id': varyant.id,
+                'ad': varyant.urun.ad,
+                'varyasyon': varyant.varyasyon_adi,
+                'beden': varyant.beden.ad if varyant.beden else 'Tek Beden',
+                'renk': varyant.renk.ad if varyant.renk else 'Standart',
+                'barkod': varyant.barkod,
+                'urun_kodu': varyant.urun.urun_kodu,
+                'satis_fiyati': str(varyant.urun.satis_fiyati),
+                'stok_miktari': varyant.stok_miktari,
+                'kategori': str(varyant.urun.kategori) if varyant.urun.kategori else 'Kategori Yok'
             })
         
         return JsonResponse({'success': True, 'urunler': data})
@@ -817,32 +968,48 @@ def urun_ara(request):
 @login_required
 def sepete_ekle(request):
     """Sepete ekleme AJAX view'ı"""
+    from urun.models import UrunVaryanti
+    
     if request.method == 'POST':
-        urun_id = request.POST.get('urun_id')
+        varyant_id = request.POST.get('varyant_id')
+        urun_id = request.POST.get('urun_id')  # Eski sistemle uyumluluk için
         miktar = int(request.POST.get('miktar', 1))
         
         try:
-            urun = Urun.objects.get(pk=urun_id, aktif=True)
+            # Önce varyant_id ile dene, yoksa urun_id ile ilk varyantı al
+            if varyant_id:
+                varyant = UrunVaryanti.objects.get(pk=varyant_id, aktif=True, urun__aktif=True)
+            elif urun_id:
+                varyant = UrunVaryanti.objects.filter(urun_id=urun_id, aktif=True, urun__aktif=True).first()
+                if not varyant:
+                    return JsonResponse({'success': False, 'message': 'Ürün varyantı bulunamadı!'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Ürün ID eksik!'})
             
-            if urun.stok_miktari < miktar:
+            if varyant.stok_miktari < miktar:
                 return JsonResponse({'success': False, 'message': 'Yeterli stok yok!'})
             
             # Session'dan sepeti al
             sepet = request.session.get('sepet', {})
             
-            if str(urun_id) in sepet:
-                sepet[str(urun_id)]['miktar'] += miktar
+            sepet_key = f"v_{varyant.id}"  # Varyant bazlı key
+            
+            if sepet_key in sepet:
+                sepet[sepet_key]['miktar'] += miktar
             else:
-                sepet[str(urun_id)] = {
-                    'ad': urun.ad,
-                    'barkod': urun.barkod,
-                    'fiyat': str(urun.satis_fiyati),
+                sepet[sepet_key] = {
+                    'varyant_id': varyant.id,
+                    'urun_id': varyant.urun.id,
+                    'ad': varyant.urun.ad,
+                    'varyasyon': varyant.varyasyon_adi,
+                    'barkod': varyant.barkod,
+                    'fiyat': str(varyant.urun.satis_fiyati),
                     'miktar': miktar,
                 }
             
             # Toplam hesapla
-            sepet[str(urun_id)]['toplam'] = str(
-                float(sepet[str(urun_id)]['fiyat']) * sepet[str(urun_id)]['miktar']
+            sepet[sepet_key]['toplam'] = str(
+                float(sepet[sepet_key]['fiyat']) * sepet[sepet_key]['miktar']
             )
             
             # Session'a kaydet
@@ -850,8 +1017,8 @@ def sepete_ekle(request):
             
             return JsonResponse({'success': True, 'message': 'Ürün sepete eklendi'})
             
-        except Urun.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Ürün bulunamadı!'})
+        except UrunVaryanti.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Ürün varyantı bulunamadı!'})
     
     return JsonResponse({'success': False, 'message': 'Geçersiz istek!'})
 

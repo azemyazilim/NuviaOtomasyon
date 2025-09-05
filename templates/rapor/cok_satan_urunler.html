@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Çok Satan Ürünler{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Çok Satan Ürünler Raporu</h2>
+        <div class="d-flex gap-2">
+            <a href="#" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Excel İndir
+            </a>
+            <a href="#" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> PDF İndir
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarih Aralığı Seçici -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-auto">
+                    <label class="form-label">Başlangıç Tarihi:</label>
+                    <input type="date" name="baslangic" class="form-control" value="{{ baslangic|date:'Y-m-d' }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Bitiş Tarihi:</label>
+                    <input type="date" name="bitis" class="form-control" value="{{ bitis|date:'Y-m-d' }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary form-control">Filtrele</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Çok Satan Ürünler Tablosu -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">En Çok Satan 20 Ürün ({{ baslangic|date:'d.m.Y' }} - {{ bitis|date:'d.m.Y' }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ürün Adı</th>
+                            <th>Barkod</th>
+                            <th>Kategori</th>
+                            <th>Satış Miktarı</th>
+                            <th>Toplam Ciro</th>
+                            <th>Ortalama Fiyat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cok_satanlar %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.urun_obj.ad }}</td>
+                            <td>{{ item.urun_obj.barkod }}</td>
+                            <td>{{ item.urun_obj.kategori.ad }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ item.toplam_miktar }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success">{{ item.toplam_ciro|floatformat:2 }} ₺</span>
+                            </td>
+                            <td>
+                                {% widthratio item.toplam_ciro item.toplam_miktar 1 %} ₺
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Bu tarih aralığında satış bulunamadı.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

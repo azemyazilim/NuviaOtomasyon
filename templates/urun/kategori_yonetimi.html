@@ -159,7 +159,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h4 class="mb-0">{% for kategori in ust_kategoriler %}{{ kategori.urun_set.count }}{% if not forloop.last %} + {% endif %}{% endfor %}</h4>
+                            <h4 class="mb-0">{{ toplam_urun_sayisi|default:0 }}</h4>
                             <p class="mb-0">Toplam Ürün</p>
                         </div>
                         <i class="fas fa-box fa-2x opacity-75"></i>

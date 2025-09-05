@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <div class="btn-group" role="group">
+            <a href="?stok_filtre=tumu" class="btn btn-outline-primary {% if stok_filtre == 'tumu' %}active{% endif %}">
+                Tümü
+            </a>
+            <a href="?stok_filtre=stokta_var" class="btn btn-outline-success {% if stok_filtre == 'stokta_var' %}active{% endif %}">
+                Stokta Var
+            </a>
+            <a href="?stok_filtre=tukenmek_uzere" class="btn btn-outline-warning {% if stok_filtre == 'tukenmek_uzere' %}active{% endif %}">
+                Tükenmek Üzere
+            </a>
+            <a href="?stok_filtre=tukenmis" class="btn btn-outline-danger {% if stok_filtre == 'tukenmis' %}active{% endif %}">
+                Tükenen
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ürün Adı</th>
+                            <th>Barkod</th>
+                            <th>Kategori</th>
+                            <th>Marka</th>
+                            <th>Stok Miktarı</th>
+                            <th>Birim</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for urun in urunler %}
+                        <tr>
+                            <td>{{ urun.ad }}</td>
+                            <td>{{ urun.barkod }}</td>
+                            <td>{{ urun.kategori.ad }}</td>
+                            <td>{{ urun.marka.ad|default:"-" }}</td>
+                            <td>
+                                <span class="fw-bold {% if urun.stok_miktari == 0 %}text-danger{% elif urun.stok_miktari <= 10 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ urun.stok_miktari }}
+                                </span>
+                            </td>
+                            <td>{{ urun.birim }}</td>
+                            <td>
+                                {% if urun.stok_miktari == 0 %}
+                                    <span class="badge bg-danger">Tükendi</span>
+                                {% elif urun.stok_miktari <= 10 %}
+                                    <span class="badge bg-warning">Tükenmek Üzere</span>
+                                {% else %}
+                                    <span class="badge bg-success">Stokta</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Ürün bulunamadı.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

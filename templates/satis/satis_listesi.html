@@ -259,6 +259,7 @@
                                     <th>Satıcı</th>
                                     <th class="text-center">Ürün Adedi</th>
                                     <th class="text-end">Tutar</th>
+                                    <th class="text-center">Ödeme Şekli</th>
                                     <th class="text-center">Durum</th>
                                     <th class="text-center">İşlemler</th>
                                 </tr>
@@ -297,6 +298,9 @@
                                         <strong class="text-success">{{ satis.toplam_tutar|floatformat:2 }} ₺</strong>
                                     </td>
                                     <td class="text-center">
+                                        <small class="text-muted">{{ satis.odeme_yontemleri }}</small>
+                                    </td>
+                                    <td class="text-center">
                                         <span class="sale-status status-{{ satis.durum }}">
                                             {{ satis.get_durum_display }}
                                         </span>
@@ -324,7 +328,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="8" class="text-center py-4">
+                                    <td colspan="9" class="text-center py-4">
                                         <div class="alert alert-info">
                                             <h5><i class="fas fa-info-circle"></i> Satış Bulunamadı</h5>
                                             <p>Arama kriterlerinize uygun satış kaydı bulunamadı.</p>
@@ -339,7 +343,7 @@
                             {% if page_obj and view_mode == 'table' %}
                             <tfoot>
                                 <tr class="table-info fw-bold">
-                                    <td colspan="4" class="text-end">
+                                    <td colspan="5" class="text-end">
                                         <strong>Sayfa Toplamı:</strong>
                                     </td>
                                     <td class="text-center">
