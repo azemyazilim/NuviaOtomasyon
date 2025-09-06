@@ -192,6 +192,7 @@ class UrunVaryanti(models.Model):
     
     # Stok bilgisi
     stok_miktari = models.PositiveIntegerField(default=1, verbose_name="Stok Miktarı")
+    stok_kaydedildi = models.BooleanField(default=False, verbose_name="Stok Kaydedildi Mi?")
     
     # Ek bilgiler
     ek_aciklama = models.TextField(blank=True, null=True, verbose_name="Ek Açıklama")
@@ -294,3 +295,63 @@ class UrunVaryanti(models.Model):
             }
         except:
             return None
+
+
+class StokHareket(models.Model):
+    """Stok hareket takip modeli"""
+    HAREKET_TIPLERI = [
+        ('giris', 'Stok Girişi'),
+        ('cikis', 'Stok Çıkışı'),
+        ('duzeltme', 'Stok Düzeltmesi'),
+        ('sayim', 'Stok Sayımı'),
+        ('transfer', 'Transfer'),
+        ('fire', 'Fire'),
+    ]
+    
+    varyant = models.ForeignKey('UrunVaryanti', on_delete=models.CASCADE, verbose_name="Ürün Varyantı")
+    hareket_tipi = models.CharField(max_length=20, choices=HAREKET_TIPLERI, verbose_name="Hareket Tipi")
+    miktar = models.IntegerField(verbose_name="Miktar")
+    onceki_stok = models.IntegerField(verbose_name="Önceki Stok")
+    yeni_stok = models.IntegerField(verbose_name="Yeni Stok")
+    aciklama = models.TextField(blank=True, null=True, verbose_name="Açıklama")
+    referans_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="Referans ID")  # Satış ID vs.
+    kullanici = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Kullanıcı")
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True, verbose_name="Oluşturma Tarihi")
+    
+    class Meta:
+        verbose_name = "Stok Hareket"
+        verbose_name_plural = "Stok Hareketleri"
+        ordering = ['-olusturma_tarihi']
+    
+    def __str__(self):
+        return f"{self.varyant} - {self.get_hareket_tipi_display()} ({self.miktar})"
+    
+    @classmethod
+    def stok_hareketi_olustur(cls, varyant, hareket_tipi, miktar, kullanici, aciklama=None, referans_id=None):
+        """Stok hareketi oluşturur"""
+        onceki_stok = varyant.stok_miktari
+        
+        if hareket_tipi == 'giris':
+            yeni_stok = onceki_stok + miktar
+        elif hareket_tipi == 'cikis':
+            yeni_stok = onceki_stok - miktar
+        else:
+            yeni_stok = miktar  # Düzeltme, sayım vb. için direkt miktar
+        
+        # Stok hareketini kaydet
+        hareket = cls.objects.create(
+            varyant=varyant,
+            hareket_tipi=hareket_tipi,
+            miktar=miktar,
+            onceki_stok=onceki_stok,
+            yeni_stok=yeni_stok,
+            aciklama=aciklama,
+            referans_id=referans_id,
+            kullanici=kullanici
+        )
+        
+        # Varyantın stok miktarını güncelle
+        varyant.stok_miktari = yeni_stok
+        varyant.save(update_fields=['stok_miktari'])
+        
+        return hareket

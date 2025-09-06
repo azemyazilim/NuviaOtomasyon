@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UrunKategoriUst, Renk, Beden, Marka, Urun, UrunVaryanti
+from .models import UrunKategoriUst, Renk, Beden, Marka, Urun, UrunVaryanti, StokHareket
 
 
 @admin.register(UrunKategoriUst)
@@ -82,3 +82,15 @@ class UrunVaryantiAdmin(admin.ModelAdmin):
     search_fields = ['urun__ad', 'barkod']
     ordering = ['urun', 'renk', 'beden']
     readonly_fields = ['barkod', 'olusturma_tarihi', 'guncelleme_tarihi']
+
+
+@admin.register(StokHareket)
+class StokHareketAdmin(admin.ModelAdmin):
+    list_display = ['varyant', 'hareket_tipi', 'miktar', 'onceki_stok', 'yeni_stok', 'kullanici', 'olusturma_tarihi']
+    list_filter = ['hareket_tipi', 'olusturma_tarihi', 'kullanici']
+    search_fields = ['varyant__urun__ad', 'varyant__barkod', 'aciklama']
+    ordering = ['-olusturma_tarihi']
+    readonly_fields = ['olusturma_tarihi']
+    
+    def has_add_permission(self, request):
+        return False  # Stok hareketleri sadece sistem tarafından oluşturulmalı

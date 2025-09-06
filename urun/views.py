@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from django.db import transaction
 from .models import Urun, UrunKategoriUst, Renk, Beden, Marka, UrunVaryanti
 
 
@@ -15,6 +16,7 @@ def urun_listesi(request):
     query = request.GET.get('q', '').strip()
     kategori_filter = request.GET.get('kategori', '')
     durum_filter = request.GET.get('durum', '')
+    varyasyonlu_filter = request.GET.get('varyasyonlu', '')  # Yeni varyasyon filtresi
     
     # Base queryset
     urunler = Urun.objects.select_related('kategori', 'marka').prefetch_related('varyantlar').all()
@@ -30,6 +32,10 @@ def urun_listesi(request):
     # Kategori filtresi
     if kategori_filter:
         urunler = urunler.filter(kategori_id=kategori_filter)
+    
+    # Varyasyon filtresi
+    if varyasyonlu_filter == '1':
+        urunler = urunler.filter(varyasyonlu=True)
     
     # Durum filtresi için ürünleri filtrele
     filtered_urunler = []
@@ -89,10 +95,11 @@ def urun_listesi(request):
     context = {
         'page_obj': page_obj,
         'urunler': page_obj,  # Template uyumluluğu için
-        'title': 'Ürün Listesi',
+        'title': 'Varyasyon Yönetimi' if varyasyonlu_filter == '1' else 'Ürün Listesi',
         'query': query,
         'kategori_filter': kategori_filter,
         'durum_filter': durum_filter,
+        'varyasyonlu_filter': varyasyonlu_filter,
         'kategoriler': kategoriler,
         'toplam_urun': toplam_urun,
         'aktif_urun': aktif_urun,
@@ -158,6 +165,7 @@ def urun_ekle(request):
                                 renk=renk,
                                 beden=beden,
                                 stok_miktari=1,  # Varsayılan stok
+                                stok_kaydedildi=False,  # Henüz kaydedilmemiş
                                 aktif=True
                             )
                     
@@ -171,6 +179,7 @@ def urun_ekle(request):
                     renk=None,
                     beden=None,
                     stok_miktari=int(request.POST.get('stok_miktari', 0)),
+                    stok_kaydedildi=True,  # Varyasyonsuz ürünler direkt kaydedilmiş sayılır
                     aktif=True
                 )
                 messages.success(request, f'✅ {urun.ad} ürünü eklendi!')
@@ -564,3 +573,233 @@ def urun_sil(request, urun_id):
         'hata_mesaji': hata_mesaji
     }
     return render(request, 'urun/sil_onay.html', context)
+
+
+@login_required
+def varyasyon_yonet(request, urun_id):
+    """Ürün varyasyonlarını yönetme sayfası"""
+    urun = get_object_or_404(Urun, id=urun_id)
+    
+    # Sadece varyasyonlu ürünler için
+    if not urun.varyasyonlu:
+        messages.error(request, 'Bu ürün varyasyonlu değil!')
+        return redirect('urun:detay', urun_id)
+    
+    # Mevcut varyantları getir
+    mevcut_varyantlar = UrunVaryanti.objects.filter(urun=urun).select_related('renk', 'beden')
+    
+    # Düzenlenebilir varyant var mı kontrol et (stok_kaydedildi=False olanlar)
+    has_editable_variants = mevcut_varyantlar.filter(stok_kaydedildi=False).exists()
+    
+    # Tüm renk ve bedenler
+    renkler = Renk.objects.filter(aktif=True).order_by('sira', 'ad')
+    bedenler = Beden.objects.filter(aktif=True).order_by('tip', 'sira', 'ad')
+    
+    context = {
+        'urun': urun,
+        'mevcut_varyantlar': mevcut_varyantlar,
+        'has_editable_variants': has_editable_variants,
+        'renkler': renkler,
+        'bedenler': bedenler,
+        'title': f'{urun.ad} - Varyasyon Yönetimi'
+    }
+    
+    return render(request, 'urun/varyasyon_yonet.html', context)
+
+
+@login_required
+def varyasyon_olustur(request, urun_id):
+    """Seçilen renk ve bedenlerle otomatik varyasyon oluşturma"""
+    urun = get_object_or_404(Urun, id=urun_id)
+    
+    if not urun.varyasyonlu:
+        return JsonResponse({'success': False, 'error': 'Bu ürün varyasyonlu değil!'})
+    
+    if request.method == 'POST':
+        try:
+            # Seçilen renk ve beden ID'lerini al
+            renk_ids = request.POST.getlist('renkler')
+            beden_ids = request.POST.getlist('bedenler')
+            
+            if not renk_ids and not beden_ids:
+                return JsonResponse({'success': False, 'error': 'En az bir renk veya beden seçmelisiniz!'})
+            
+            # Eğer hiç renk seçilmemişse None olarak işle
+            if not renk_ids:
+                renk_ids = [None]
+            # Eğer hiç beden seçilmemişse None olarak işle
+            if not beden_ids:
+                beden_ids = [None]
+            
+            created_count = 0
+            skipped_count = 0
+            
+            with transaction.atomic():
+                # Tüm kombinasyonları oluştur
+                for renk_id in renk_ids:
+                    for beden_id in beden_ids:
+                        # Renk ve beden objelerini al
+                        renk = Renk.objects.get(id=renk_id) if renk_id else None
+                        beden = Beden.objects.get(id=beden_id) if beden_id else None
+                        
+                        # Bu kombinasyon zaten var mı kontrol et
+                        varyant_exists = UrunVaryanti.objects.filter(
+                            urun=urun,
+                            renk=renk,
+                            beden=beden
+                        ).exists()
+                        
+                        if not varyant_exists:
+                            # Yeni varyant oluştur
+                            UrunVaryanti.objects.create(
+                                urun=urun,
+                                renk=renk,
+                                beden=beden,
+                                stok_miktari=1,  # Başlangıç stoku 1
+                                stok_kaydedildi=False,  # Henüz kaydedilmemiş
+                                aktif=True
+                            )
+                            created_count += 1
+                        else:
+                            skipped_count += 1
+            
+            return JsonResponse({
+                'success': True, 
+                'created': created_count,
+                'skipped': skipped_count,
+                'message': f'{created_count} varyant oluşturuldu, {skipped_count} zaten mevcuttu.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Hata oluştu: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Geçersiz istek!'})
+
+
+@login_required
+def varyant_duzenle(request, varyant_id):
+    """Varyant düzenleme"""
+    from .models import StokHareket
+    varyant = get_object_or_404(UrunVaryanti, id=varyant_id)
+    
+    if request.method == 'POST':
+        try:
+            yeni_stok_miktari = int(request.POST.get('stok_miktari', 0))
+            aktif = request.POST.get('aktif') == 'on'
+            
+            # Eski stok miktarını al
+            eski_stok = varyant.stok_miktari
+            
+            # Eğer stok miktarı değiştiyse stok hareketi oluştur
+            if eski_stok != yeni_stok_miktari:
+                fark = yeni_stok_miktari - eski_stok
+                if fark > 0:
+                    hareket_tipi = 'giris'
+                    miktar = fark
+                    aciklama = f'Manuel stok girişi (+{fark})'
+                else:
+                    hareket_tipi = 'cikis'
+                    miktar = abs(fark)
+                    aciklama = f'Manuel stok çıkışı (-{abs(fark)})'
+                
+                # Stok hareketini oluştur
+                StokHareket.stok_hareketi_olustur(
+                    varyant=varyant,
+                    hareket_tipi=hareket_tipi,
+                    miktar=miktar,
+                    kullanici=request.user,
+                    aciklama=aciklama,
+                    referans_id=f'manuel_{varyant.id}'
+                )
+            else:
+                # Sadece aktiflik durumu değişti
+                varyant.aktif = aktif
+                varyant.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{varyant.varyasyon_adi} başarıyla güncellendi!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Hata oluştu: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Geçersiz istek!'})
+
+
+@login_required
+def varyant_sil(request, varyant_id):
+    """Varyant silme"""
+    varyant = get_object_or_404(UrunVaryanti, id=varyant_id)
+    
+    if request.method == 'POST':
+        try:
+            varyasyon_adi = varyant.varyasyon_adi
+            varyant.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{varyasyon_adi} varyantı silindi!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Hata oluştu: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Geçersiz istek!'})
+
+
+@login_required
+def varyant_toplu_stok_guncelle(request, urun_id):
+    """Tüm varyantlar için toplu stok güncelleme - sadece henüz kaydedilmemiş varyantlar"""
+    from .models import StokHareket
+    urun = get_object_or_404(Urun, id=urun_id)
+    
+    if request.method == 'POST':
+        try:
+            updated_count = 0
+            skipped_count = 0
+            
+            with transaction.atomic():
+                for key, value in request.POST.items():
+                    if key.startswith('stok_'):
+                        varyant_id = key.replace('stok_', '')
+                        try:
+                            varyant = UrunVaryanti.objects.get(id=varyant_id, urun=urun)
+                            
+                            # Sadece henüz kaydedilmemiş varyantları güncelle
+                            if not varyant.stok_kaydedildi:
+                                yeni_stok_miktari = int(value) if value else 0
+                                eski_stok = varyant.stok_miktari
+                                
+                                # İlk stok girişi ise stok hareketi oluştur
+                                if yeni_stok_miktari > 0:
+                                    StokHareket.stok_hareketi_olustur(
+                                        varyant=varyant,
+                                        hareket_tipi='giris',
+                                        miktar=yeni_stok_miktari,
+                                        kullanici=request.user,
+                                        aciklama=f'İlk stok girişi - {varyant.varyasyon_adi}',
+                                        referans_id=f'ilk_stok_{varyant.id}'
+                                    )
+                                
+                                varyant.stok_kaydedildi = True  # Artık kaydedildi olarak işaretle
+                                updated_count += 1
+                            else:
+                                skipped_count += 1
+                                
+                        except (UrunVaryanti.DoesNotExist, ValueError):
+                            continue
+            
+            message = f'{updated_count} varyant stoku güncellendi!'
+            if skipped_count > 0:
+                message += f' ({skipped_count} varyant zaten kaydedilmiş olduğu için atlandı)'
+            
+            return JsonResponse({
+                'success': True,
+                'message': message
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Hata oluştu: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Geçersiz istek!'})

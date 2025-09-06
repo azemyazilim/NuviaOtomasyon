@@ -1,0 +1,573 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ urun.ad }} - Varyasyon Yönetimi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .variation-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .selection-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .color-selection, .size-selection {
+        margin-bottom: 1rem;
+    }
+    
+    .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .checkbox-item:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+    }
+    
+    .checkbox-item.selected {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        margin-right: 0.5rem;
+    }
+    
+    .color-preview {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        border: 2px solid #ddd;
+        display: inline-block;
+    }
+    
+    .variant-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .variant-row {
+        border-bottom: 1px solid #eee;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    
+    .variant-row:hover {
+        background: #f8f9fa;
+    }
+    
+    .variant-info {
+        flex: 1;
+    }
+    
+    .variant-name {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .variant-details {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .variant-stock {
+        width: 100px;
+        text-align: center;
+    }
+    
+    .variant-actions {
+        width: 120px;
+        text-align: right;
+    }
+    
+    .stock-input {
+        width: 80px;
+        text-align: center;
+    }
+    
+    .create-button {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .create-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    }
+    
+    .variant-count {
+        background: #007bff;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sayfa Başlığı -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-palette text-info me-2"></i>
+                Varyasyon Yönetimi
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:liste' %}">Ürünler</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'urun:detay' urun.id %}">{{ urun.ad }}</a></li>
+                    <li class="breadcrumb-item active">Varyasyon Yönetimi</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'urun:detay' urun.id %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Ürün Detayına Dön
+            </a>
+            <a href="{% url 'urun:liste' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>Ürün Listesi
+            </a>
+        </div>
+    </div>
+
+    <!-- Ürün Bilgileri Özet -->
+    <div class="card variation-card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    {% if urun.resim %}
+                        <img src="{{ urun.resim.url }}" alt="{{ urun.ad }}" class="img-fluid rounded">
+                    {% else %}
+                        <div class="text-center text-muted" style="padding: 2rem;">
+                            <i class="fas fa-image" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-8">
+                    <h4>{{ urun.ad }}</h4>
+                    <p class="text-muted mb-2">{{ urun.aciklama|default:"Açıklama bulunmuyor" }}</p>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">Kategori</small>
+                            <div class="fw-bold">{{ urun.kategori.ad }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Marka</small>
+                            <div class="fw-bold">{{ urun.marka.ad|default:"-" }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Satış Fiyatı</small>
+                            <div class="fw-bold text-success">{{ urun.satis_fiyati }} ₺</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Toplam Stok</small>
+                            <div class="fw-bold text-primary">{{ urun.toplam_stok }} adet</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 text-end">
+                    <div class="variant-count">
+                        {{ mevcut_varyantlar.count }} Varyant
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Varyasyon Oluşturma -->
+        <div class="col-lg-4">
+            <div class="card variation-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Yeni Varyasyon Oluştur
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="variationForm">
+                        {% csrf_token %}
+                        
+                        <!-- Renk Seçimi -->
+                        <div class="selection-section">
+                            <h6 class="mb-3">
+                                <i class="fas fa-palette me-2"></i>Renkler
+                            </h6>
+                            <div class="checkbox-grid">
+                                {% for renk in renkler %}
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="renkler" value="{{ renk.id }}" id="renk_{{ renk.id }}">
+                                    <label for="renk_{{ renk.id }}" class="d-flex align-items-center mb-0 cursor-pointer">
+                                        {% if renk.hex_kod %}
+                                        <span class="color-preview" style="background-color: {{ renk.hex_kod }};"></span>
+                                        {% endif %}
+                                        {{ renk.ad }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if not renkler %}
+                            <p class="text-muted text-center">Henüz renk tanımlanmamış.</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Beden Seçimi -->
+                        <div class="selection-section">
+                            <h6 class="mb-3">
+                                <i class="fas fa-ruler me-2"></i>Bedenler
+                            </h6>
+                            <div class="checkbox-grid">
+                                {% for beden in bedenler %}
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="bedenler" value="{{ beden.id }}" id="beden_{{ beden.id }}">
+                                    <label for="beden_{{ beden.id }}" class="mb-0 cursor-pointer">
+                                        {{ beden.ad }}
+                                        <small class="text-muted">({{ beden.get_tip_display }})</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if not bedenler %}
+                            <p class="text-muted text-center">Henüz beden tanımlanmamış.</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn create-button">
+                                <i class="fas fa-magic me-2"></i>
+                                Varyasyonları Oluştur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mevcut Varyasyonlar -->
+        <div class="col-lg-8">
+            <div class="card variation-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Mevcut Varyasyonlar
+                    </h5>
+                    {% if has_editable_variants %}
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="topluStokGuncelle()">
+                            <i class="fas fa-save me-1"></i>Stokları Kaydet
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if mevcut_varyantlar %}
+                    <!-- Bilgilendirme Mesajı -->
+                    <div class="alert alert-info m-3 mb-0" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Not:</strong> Sadece yeni oluşturulmuş varyantların stok miktarları değiştirilebilir. 
+                        Daha önce kaydedilmiş varyantlar güvenlik nedeniyle korunmaktadır.
+                    </div>
+                    <form id="bulkStockForm">
+                        {% csrf_token %}
+                        <div class="variant-table">
+                            {% for varyant in mevcut_varyantlar %}
+                            <div class="variant-row">
+                                <div class="variant-info">
+                                    <div class="variant-name">{{ varyant.varyasyon_adi }}</div>
+                                    <div class="variant-details">
+                                        Barkod: <code>{{ varyant.barkod|default:"Oluşturulacak" }}</code>
+                                        {% if not varyant.aktif %}
+                                        <span class="badge bg-secondary ms-2">Pasif</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="variant-stock">
+                                    {% if not varyant.stok_kaydedildi %}
+                                        <!-- Henüz kaydedilmemiş varyant - düzenlenebilir -->
+                                        <input type="number" 
+                                               name="stok_{{ varyant.id }}" 
+                                               value="{{ varyant.stok_miktari }}" 
+                                               class="form-control stock-input" 
+                                               min="0"
+                                               title="Stok miktarını düzenleyebilirsiniz">
+                                    {% else %}
+                                        <!-- Kaydedilmiş varyant - salt okunur -->
+                                        <input type="number" 
+                                               name="stok_{{ varyant.id }}" 
+                                               value="{{ varyant.stok_miktari }}" 
+                                               class="form-control stock-input" 
+                                               min="0"
+                                               readonly
+                                               style="background-color: #f8f9fa; cursor: not-allowed;"
+                                               title="Bu varyantın stoku daha önce kaydedilmiş - değiştirilemez">
+                                    {% endif %}
+                                </div>
+                                <div class="variant-actions">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            onclick="varyantSil({{ varyant.id }})" 
+                                            title="Sil">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-palette"></i>
+                        <h5>Henüz varyasyon oluşturulmamış</h5>
+                        <p class="text-muted">Sol taraftan renk ve beden seçerek varyasyonlar oluşturabilirsiniz.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Checkbox seçim efektleri
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxItems = document.querySelectorAll('.checkbox-item');
+    
+    checkboxItems.forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        
+        item.addEventListener('click', function(e) {
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+            updateItemAppearance(item, checkbox.checked);
+        });
+        
+        checkbox.addEventListener('change', function() {
+            updateItemAppearance(item, this.checked);
+        });
+        
+        // İlk yükleme
+        updateItemAppearance(item, checkbox.checked);
+    });
+    
+    function updateItemAppearance(item, checked) {
+        if (checked) {
+            item.classList.add('selected');
+        } else {
+            item.classList.remove('selected');
+        }
+    }
+});
+
+// Varyasyon oluşturma
+document.getElementById('variationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const renkler = formData.getAll('renkler');
+    const bedenler = formData.getAll('bedenler');
+    
+    if (renkler.length === 0 && bedenler.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Uyarı',
+            text: 'En az bir renk veya beden seçmelisiniz!'
+        });
+        return;
+    }
+    
+    // Loading göster
+    Swal.fire({
+        title: 'Varyasyonlar oluşturuluyor...',
+        html: 'Lütfen bekleyin...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // AJAX ile gönder
+    fetch(`{% url 'urun:varyasyon_olustur' urun.id %}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        Swal.close();
+        
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                // Sayfayı yenile
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: data.error
+            });
+        }
+    })
+    .catch(error => {
+        Swal.close();
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Beklenmeyen bir hata oluştu!'
+        });
+    });
+});
+
+// Toplu stok güncelleme
+function topluStokGuncelle() {
+    const formData = new FormData(document.getElementById('bulkStockForm'));
+    
+    Swal.fire({
+        title: 'Stoklar güncelleniyor...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    fetch(`{% url 'urun:varyant_toplu_stok' urun.id %}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        Swal.close();
+        
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: data.message,
+                confirmButtonText: 'Tamam'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Ürün listesine yönlendir
+                    window.location.href = '{% url "urun:liste" %}';
+                }
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: data.error
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Beklenmeyen bir hata oluştu!'
+        });
+    });
+}
+
+// Varyant silme
+function varyantSil(varyantId) {
+    Swal.fire({
+        title: 'Emin misiniz?',
+        text: 'Bu varyant kalıcı olarak silinecek!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Evet, sil!',
+        cancelButtonText: 'İptal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            fetch(`/urun/varyant/${varyantId}/sil/`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Silindi!',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: data.error
+                    });
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

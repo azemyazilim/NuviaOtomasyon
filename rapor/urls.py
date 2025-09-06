@@ -7,6 +7,7 @@ urlpatterns = [
     # Raporlar
     path('gunluk-satis/', views.gunluk_satis, name='gunluk_satis'),
     path('stok-raporu/', views.stok_raporu, name='stok_raporu'),
+    path('stok-hareketleri/<int:varyant_id>/', views.stok_hareketleri, name='stok_hareketleri'),
     path('cok-satan-urunler/', views.cok_satan_urunler, name='cok_satan_urunler'),
     path('kar-zarar/', views.kar_zarar, name='kar_zarar'),
     path('musteri-raporu/', views.musteri_raporu, name='musteri_raporu'),

@@ -21,11 +21,22 @@ def gunluk_satis(request):
     except ValueError:
         secili_tarih = bugun
     
-    # Günlük satışlar
+    # Günlük satışlar - detaylı bilgi ile
     satislar = Satis.objects.filter(
         satis_tarihi__date=secili_tarih,
         durum='tamamlandi'
-    )
+    ).select_related('musteri', 'satici').prefetch_related('satisdetay_set__urun_varyanti__urun__kategori', 'satisdetay_set__urun_varyanti__urun__marka')
+    
+    # Günlük satış detayları - ürün bazında
+    satis_detaylari = SatisDetay.objects.filter(
+        satis__satis_tarihi__date=secili_tarih,
+        satis__durum='tamamlandi'
+    ).select_related(
+        'satis', 'satis__musteri', 'satis__satici',
+        'urun_varyanti', 'urun_varyanti__urun', 
+        'urun_varyanti__urun__kategori', 'urun_varyanti__urun__marka',
+        'urun_varyanti__renk', 'urun_varyanti__beden'
+    ).order_by('-satis__satis_tarihi')
     
     # İstatistikler
     toplam_satis = satislar.aggregate(
@@ -33,10 +44,17 @@ def gunluk_satis(request):
         adet=Count('id')
     )
     
+    toplam_urun_sayisi = satis_detaylari.aggregate(
+        toplam_adet=Sum('miktar')
+    )['toplam_adet'] or 0
+    
     context = {
         'satislar': satislar,
-        'secili_tarih': secili_tarih,
-        'toplam_satis': toplam_satis,
+        'satis_detaylari': satis_detaylari,
+        'tarih': secili_tarih.strftime('%Y-%m-%d'),
+        'toplam_satis': toplam_satis['toplam'] or 0,
+        'satis_sayisi': toplam_satis['adet'] or 0,
+        'toplam_urun_sayisi': toplam_urun_sayisi,
     }
     return render(request, 'rapor/gunluk_satis.html', context)
 
@@ -366,3 +384,31 @@ def kar_zarar_pdf(request):
     """Kâr/Zarar PDF export"""
     # PDF oluşturma kodu buraya gelecek
     pass
+
+
+@login_required
+def stok_hareketleri(request, varyant_id):
+    """Ürün varyantının stok hareketleri"""
+    from urun.models import UrunVaryanti, StokHareket
+    from satis.models import SatisDetay
+    from django.shortcuts import get_object_or_404
+    
+    varyant = get_object_or_404(UrunVaryanti, id=varyant_id)
+    
+    # Satış hareketleri (çıkışlar)
+    satis_hareketleri = SatisDetay.objects.filter(
+        varyant=varyant
+    ).select_related('satis', 'satis__musteri', 'satis__satici').order_by('-satis__satis_tarihi')
+    
+    # Stok hareketleri (giriş, çıkış, düzeltme vb.)
+    stok_hareketleri = StokHareket.objects.filter(
+        varyant=varyant
+    ).select_related('kullanici').order_by('-olusturma_tarihi')
+    
+    context = {
+        'varyant': varyant,
+        'satis_hareketleri': satis_hareketleri,
+        'stok_hareketleri': stok_hareketleri,
+        'title': f'{varyant.urun.ad} - Stok Hareketleri'
+    }
+    return render(request, 'rapor/stok_hareketleri.html', context)

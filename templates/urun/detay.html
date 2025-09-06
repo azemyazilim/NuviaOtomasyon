@@ -76,6 +76,14 @@
             </nav>
         </div>
         <div>
+            {% if urun.varyasyonlu %}
+            <a href="{% url 'urun:varyasyon_yonet' urun.id %}" class="btn btn-info me-2">
+                <i class="fas fa-palette me-1"></i>Varyasyon Yönet
+            </a>
+            {% endif %}
+            <a href="{% url 'urun:duzenle' urun.id %}" class="btn btn-warning me-2">
+                <i class="fas fa-edit me-1"></i>Düzenle
+            </a>
             <a href="{% url 'urun:liste' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Geri Dön
             </a>

@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-history text-primary"></i>
+                Stok Hareketleri
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'rapor:stok_raporu' %}">Stok Raporu</a></li>
+                    <li class="breadcrumb-item active">{{ varyant.urun.ad }}</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{% url 'rapor:stok_raporu' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Geri Dön
+        </a>
+    </div>
+
+    <!-- Ürün Bilgi Kartı -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-box text-info"></i>
+                Ürün Bilgileri
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white text-center">
+                        <div class="card-body">
+                            <h6>Ürün Adı</h6>
+                            <h5>{{ varyant.urun.ad }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-info text-white text-center">
+                        <div class="card-body">
+                            <h6>Varyasyon</h6>
+                            <h5>
+                                {% if varyant.renk %}{{ varyant.renk.ad }}{% endif %}
+                                {% if varyant.renk and varyant.beden %} - {% endif %}
+                                {% if varyant.beden %}{{ varyant.beden.ad }}{% endif %}
+                                {% if not varyant.renk and not varyant.beden %}Standart{% endif %}
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white text-center">
+                        <div class="card-body">
+                            <h6>Barkod</h6>
+                            <h5>{{ varyant.barkod }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-success text-white text-center">
+                        <div class="card-body">
+                            <h6>Mevcut Stok</h6>
+                            <h5>{{ varyant.stok_miktari }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white text-center">
+                        <div class="card-body">
+                            <h6>Kategori / Marka</h6>
+                            <h5>{{ varyant.urun.kategori.ad }} / {{ varyant.urun.marka.ad|default:"-" }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stok Hareketleri Tablosu -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list-alt text-success"></i>
+                Satış Hareketleri (Çıkışlar)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if satis_hareketleri %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>İşlem Tipi</th>
+                            <th>Satış No</th>
+                            <th>Müşteri</th>
+                            <th>Miktar</th>
+                            <th>Birim Fiyat</th>
+                            <th>Toplam Tutar</th>
+                            <th>Satıcı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hareket in satis_hareketleri %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ hareket.satis.satis_tarihi|date:"d.m.Y" }}</span><br>
+                                <small class="text-muted">{{ hareket.satis.satis_tarihi|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-arrow-down"></i> Çıkış
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ hareket.satis.satis_no }}</strong>
+                            </td>
+                            <td>
+                                <i class="fas fa-user"></i>
+                                {{ hareket.satis.musteri.ad_soyad|default:"Perakende Satış" }}
+                                {% if hareket.satis.musteri.telefon %}
+                                    <br><small class="text-muted">{{ hareket.satis.musteri.telefon }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark fs-6">
+                                    -{{ hareket.miktar }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-primary fw-bold">{{ hareket.satis_fiyati|floatformat:2 }} ₺</span>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">{{ hareket.toplam_fiyat|floatformat:2 }} ₺</span>
+                            </td>
+                            <td>
+                                <i class="fas fa-user-tie"></i>
+                                {{ hareket.satis.satici.get_full_name }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Özet İstatistikler -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white text-center">
+                        <div class="card-body">
+                            <h6>Toplam Çıkış</h6>
+                            <h4>{{ satis_hareketleri|length }}</h4>
+                            <small>İşlem Sayısı</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white text-center">
+                        <div class="card-body">
+                            <h6>Toplam Satılan</h6>
+                            <h4>
+                                {% for h in satis_hareketleri %}{% if forloop.first %}{% endif %}{% endfor %}
+                                {% with toplam_satis=0 %}
+                                    {% for hareket in satis_hareketleri %}
+                                        {% with toplam_satis=toplam_satis|add:hareket.miktar %}{% endwith %}
+                                    {% endfor %}
+                                    {{ satis_hareketleri|length|add:0 }}
+                                {% endwith %}
+                            </h4>
+                            <small>Adet</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white text-center">
+                        <div class="card-body">
+                            <h6>Toplam Gelir</h6>
+                            <h4>
+                                {% with toplam_gelir=0 %}
+                                    {% for hareket in satis_hareketleri %}
+                                        {% with toplam_gelir=toplam_gelir|add:hareket.toplam_fiyat %}{% endwith %}
+                                    {% endfor %}
+                                    0.00
+                                {% endwith %} ₺
+                            </h4>
+                            <small>Bu Ürün Varyantından</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white text-center">
+                        <div class="card-body">
+                            <h6>Son Satış</h6>
+                            <h4>
+                                {% if satis_hareketleri.first %}
+                                    {{ satis_hareketleri.first.satis.satis_tarihi|date:"d.m.Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </h4>
+                            <small>Tarih</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <h5>Henüz Satış Hareketi Yok</h5>
+                <p>Bu ürün varyantı için henüz hiçbir satış işlemi gerçekleştirilmemiş.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stok Giriş/Çıkış Hareketleri -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-warehouse text-primary"></i>
+                Stok Hareketleri (Giriş/Çıkış/Düzeltme)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if stok_hareketleri %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>İşlem Tipi</th>
+                            <th>Miktar</th>
+                            <th>Önceki Stok</th>
+                            <th>Yeni Stok</th>
+                            <th>Açıklama</th>
+                            <th>Kullanıcı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hareket in stok_hareketleri %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ hareket.olusturma_tarihi|date:"d.m.Y" }}</span><br>
+                                <small class="text-muted">{{ hareket.olusturma_tarihi|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if hareket.hareket_tipi == 'giris' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-arrow-up"></i> Giriş
+                                    </span>
+                                {% elif hareket.hareket_tipi == 'cikis' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-arrow-down"></i> Çıkış
+                                    </span>
+                                {% elif hareket.hareket_tipi == 'duzeltme' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-edit"></i> Düzeltme
+                                    </span>
+                                {% elif hareket.hareket_tipi == 'sayim' %}
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-clipboard-check"></i> Sayım
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-exchange-alt"></i> {{ hareket.get_hareket_tipi_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if hareket.hareket_tipi == 'giris' %}
+                                    <span class="badge bg-success fs-6">+{{ hareket.miktar }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark fs-6">{{ hareket.miktar }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ hareket.onceki_stok }}</span>
+                            </td>
+                            <td>
+                                <span class="text-primary fw-bold">{{ hareket.yeni_stok }}</span>
+                            </td>
+                            <td>
+                                <small>{{ hareket.aciklama|default:"-" }}</small>
+                            </td>
+                            <td>
+                                <i class="fas fa-user"></i>
+                                {{ hareket.kullanici.get_full_name|default:hareket.kullanici.username }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <h5>Henüz Stok Hareketi Yok</h5>
+                <p>Bu ürün varyantı için henüz hiçbir stok hareketi kaydedilmemiş.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gelecek Özellikler -->
+    <div class="alert alert-light mt-4">
+        <h6><i class="fas fa-lightbulb text-warning"></i> Bilgi</h6>
+        <ul class="mb-0">
+            <li><strong>Stok Girişi:</strong> Manuel stok eklemeleri ve düzeltmeleri</li>
+            <li><strong>Satış Çıkışları:</strong> Satış işlemleri sonucu stok azalmaları</li>
+            <li><strong>Stok Sayımı:</strong> Periyodik envanter kontrolleri</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    transition: transform 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+}
+.table th {
+    border-top: none;
+}
+.badge {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

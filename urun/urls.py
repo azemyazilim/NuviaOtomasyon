@@ -11,6 +11,13 @@ urlpatterns = [
     path('<int:urun_id>/duzenle/', views.urun_duzenle, name='duzenle'),
     path('<int:urun_id>/sil/', views.urun_sil, name='sil'),
     
+    # Varyasyon yönetimi
+    path('<int:urun_id>/varyasyon/', views.varyasyon_yonet, name='varyasyon_yonet'),
+    path('<int:urun_id>/varyasyon/olustur/', views.varyasyon_olustur, name='varyasyon_olustur'),
+    path('varyant/<int:varyant_id>/duzenle/', views.varyant_duzenle, name='varyant_duzenle'),
+    path('varyant/<int:varyant_id>/sil/', views.varyant_sil, name='varyant_sil'),
+    path('<int:urun_id>/varyant/toplu-stok/', views.varyant_toplu_stok_guncelle, name='varyant_toplu_stok'),
+    
     # Barkod sorgulama
     path('barkod/', views.barkod_sorgula, name='barkod'),
     

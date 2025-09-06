@@ -66,7 +66,7 @@
     </div>
 
     <!-- Satış Listesi -->
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">{{ tarih|date:'d.m.Y' }} Tarihli Satışlar</h5>
         </div>
@@ -103,5 +103,110 @@
             </div>
         </div>
     </div>
+
+    <!-- Satılan Ürünler Detayı -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-shopping-cart text-success"></i>
+                Satılan Ürünler Detayı
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Saat</th>
+                            <th>Satış No</th>
+                            <th>Ürün Adı</th>
+                            <th>Varyasyon</th>
+                            <th>Kategori</th>
+                            <th>Marka</th>
+                            <th>Cinsiyet</th>
+                            <th>Adet</th>
+                            <th>Birim Fiyat</th>
+                            <th>Toplam</th>
+                            <th>Müşteri</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detay in satis_detaylari %}
+                        <tr>
+                            <td>{{ detay.satis.satis_tarihi|time:'H:i' }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ detay.satis.satis_no }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ detay.urun_varyanti.urun.ad }}</strong>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if detay.urun_varyanti.renk %}{{ detay.urun_varyanti.renk.ad }}{% endif %}
+                                    {% if detay.urun_varyanti.renk and detay.urun_varyanti.beden %} - {% endif %}
+                                    {% if detay.urun_varyanti.beden %}{{ detay.urun_varyanti.beden.ad }}{% endif %}
+                                    {% if not detay.urun_varyanti.renk and not detay.urun_varyanti.beden %}Standart{% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ detay.urun_varyanti.urun.kategori.ad }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ detay.urun_varyanti.urun.marka.ad|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if detay.urun_varyanti.urun.cinsiyet == 'kadin' %}bg-pink{% elif detay.urun_varyanti.urun.cinsiyet == 'erkek' %}bg-blue{% else %}bg-purple{% endif %}">
+                                    {% if detay.urun_varyanti.urun.cinsiyet == 'kadin' %}
+                                        <i class="fas fa-venus"></i> Kadın
+                                    {% elif detay.urun_varyanti.urun.cinsiyet == 'erkek' %}
+                                        <i class="fas fa-mars"></i> Erkek
+                                    {% else %}
+                                        <i class="fas fa-venus-mars"></i> Unisex
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning text-dark">{{ detay.miktar }}</span>
+                            </td>
+                            <td>
+                                <span class="text-primary fw-bold">{{ detay.satis_fiyati|floatformat:2 }} ₺</span>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">{{ detay.toplam_fiyat|floatformat:2 }} ₺</span>
+                            </td>
+                            <td>
+                                <small>{{ detay.satis.musteri.ad_soyad|default:"Perakende" }}</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center">Bu tarihte satılan ürün bulunamadı.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.bg-pink {
+    background-color: #e91e63 !important;
+}
+.bg-blue {
+    background-color: #2196f3 !important;
+}
+.bg-purple {
+    background-color: #9c27b0 !important;
+}
+.table th {
+    border-top: none;
+}
+.badge {
+    font-size: 0.8em;
+}
+</style>
 {% endblock %}

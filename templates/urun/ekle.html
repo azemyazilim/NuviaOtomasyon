@@ -438,19 +438,6 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-boxes"></i>
-                            </span>
-                            <div class="form-floating">
-                                <input type="number" class="form-control" id="temel_stok_miktari" name="temel_stok_miktari" min="0" placeholder="Stok Miktarı"
-                                       value="{% if urun %}{{ urun.temel_stok_miktari }}{% endif %}">
-                                <label for="temel_stok_miktari">Stok Miktarı</label>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="row">
@@ -590,10 +577,6 @@
         
         // Varyasyonsuz ürünler için stok miktarını kontrol et
         if (!varyasyonlu) {
-            const stokMiktariField = document.getElementById('temel_stok_miktari');
-            if (stokMiktariField.value === '' || stokMiktariField.value === null) {
-                stokMiktariField.value = '0';
-            }
         }
         
         const requiredFields = this.querySelectorAll('[required]');
@@ -654,12 +637,6 @@
     }
 
     // Stok miktarı boş olduğunda 0 yap
-    document.getElementById('temel_stok_miktari').addEventListener('blur', function() {
-        if (this.value === '' || this.value === null) {
-            this.value = '0';
-        }
-    });
-
     // Sayfa yüklendiğinde
     document.addEventListener('DOMContentLoaded', function() {
         // Varyasyon alanlarının görünürlüğünü ayarla

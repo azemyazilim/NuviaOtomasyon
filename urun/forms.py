@@ -10,7 +10,7 @@ class UrunForm(forms.ModelForm):
         fields = [
             'sku', 'ad', 'aciklama', 'kategori', 'marka', 'cinsiyet', 'birim',
             'varyasyonlu', 'varyasyon_tipleri', 'temel_alis_fiyati', 'temel_kar_orani',
-            'temel_satis_fiyati', 'temel_stok_miktari', 'kritik_stok_seviyesi',
+            'temel_satis_fiyati', 'kritik_stok_seviyesi',
             'resim', 'aktif', 'stok_takibi'
         ]
         
@@ -65,11 +65,6 @@ class UrunForm(forms.ModelForm):
                 'min': '0',
                 'placeholder': '0.00',
                 'readonly': True
-            }),
-            'temel_stok_miktari': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': '0'
             }),
             'kritik_stok_seviyesi': forms.NumberInput(attrs={
                 'class': 'form-control',

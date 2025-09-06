@@ -220,6 +220,7 @@
                                 <i class="fas fa-sort sort-icon ms-1"></i>
                             </th>
                             <th>Durum</th>
+                            <th>İşlemler</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -264,10 +265,15 @@
                                     <span class="badge bg-success">Normal</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                <a href="{% url 'rapor:stok_hareketleri' varyant.id %}" class="btn btn-outline-info btn-sm" title="Stok Hareketlerini Görüntüle">
+                                    <i class="fas fa-history"></i> Hareketler
+                                </a>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center">Ürün bulunamadı.</td>
+                            <td colspan="11" class="text-center">Ürün bulunamadı.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
