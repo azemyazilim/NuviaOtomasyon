@@ -138,27 +138,27 @@
                                 <span class="badge bg-primary">{{ detay.satis.satis_no }}</span>
                             </td>
                             <td>
-                                <strong>{{ detay.urun_varyanti.urun.ad }}</strong>
+                                <strong>{{ detay.varyant.urun.ad }}</strong>
                             </td>
                             <td>
                                 <small class="text-muted">
-                                    {% if detay.urun_varyanti.renk %}{{ detay.urun_varyanti.renk.ad }}{% endif %}
-                                    {% if detay.urun_varyanti.renk and detay.urun_varyanti.beden %} - {% endif %}
-                                    {% if detay.urun_varyanti.beden %}{{ detay.urun_varyanti.beden.ad }}{% endif %}
-                                    {% if not detay.urun_varyanti.renk and not detay.urun_varyanti.beden %}Standart{% endif %}
+                                    {% if detay.varyant.renk %}{{ detay.varyant.renk.ad }}{% endif %}
+                                    {% if detay.varyant.renk and detay.varyant.beden %} - {% endif %}
+                                    {% if detay.varyant.beden %}{{ detay.varyant.beden.ad }}{% endif %}
+                                    {% if not detay.varyant.renk and not detay.varyant.beden %}Standart{% endif %}
                                 </small>
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ detay.urun_varyanti.urun.kategori.ad }}</span>
+                                <span class="badge bg-info">{{ detay.varyant.urun.kategori.ad }}</span>
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ detay.urun_varyanti.urun.marka.ad|default:"-" }}</span>
+                                <span class="badge bg-secondary">{{ detay.varyant.urun.marka.ad|default:"-" }}</span>
                             </td>
                             <td>
-                                <span class="badge {% if detay.urun_varyanti.urun.cinsiyet == 'kadin' %}bg-pink{% elif detay.urun_varyanti.urun.cinsiyet == 'erkek' %}bg-blue{% else %}bg-purple{% endif %}">
-                                    {% if detay.urun_varyanti.urun.cinsiyet == 'kadin' %}
+                                <span class="badge {% if detay.varyant.urun.cinsiyet == 'kadin' %}bg-pink{% elif detay.varyant.urun.cinsiyet == 'erkek' %}bg-blue{% else %}bg-purple{% endif %}">
+                                    {% if detay.varyant.urun.cinsiyet == 'kadin' %}
                                         <i class="fas fa-venus"></i> Kadın
-                                    {% elif detay.urun_varyanti.urun.cinsiyet == 'erkek' %}
+                                    {% elif detay.varyant.urun.cinsiyet == 'erkek' %}
                                         <i class="fas fa-mars"></i> Erkek
                                     {% else %}
                                         <i class="fas fa-venus-mars"></i> Unisex

@@ -251,6 +251,9 @@ class Odeme(models.Model):
     # Hediye çeki detayları
     hediye_ceki_kodu = models.CharField(max_length=50, null=True, blank=True, verbose_name="Hediye Çeki Kodu")
     
+    # Açıklama/Not alanı
+    aciklama = models.TextField(null=True, blank=True, verbose_name="Açıklama/Not")
+    
     # Para üstü (sadece nakit ödemede)
     para_ustu = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Para Üstü")
     

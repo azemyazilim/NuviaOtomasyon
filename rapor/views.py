@@ -25,7 +25,7 @@ def gunluk_satis(request):
     satislar = Satis.objects.filter(
         satis_tarihi__date=secili_tarih,
         durum='tamamlandi'
-    ).select_related('musteri', 'satici').prefetch_related('satisdetay_set__urun_varyanti__urun__kategori', 'satisdetay_set__urun_varyanti__urun__marka')
+    ).select_related('musteri', 'satici').prefetch_related('satisdetay_set__varyant__urun__kategori', 'satisdetay_set__varyant__urun__marka')
     
     # Günlük satış detayları - ürün bazında
     satis_detaylari = SatisDetay.objects.filter(
@@ -33,9 +33,9 @@ def gunluk_satis(request):
         satis__durum='tamamlandi'
     ).select_related(
         'satis', 'satis__musteri', 'satis__satici',
-        'urun_varyanti', 'urun_varyanti__urun', 
-        'urun_varyanti__urun__kategori', 'urun_varyanti__urun__marka',
-        'urun_varyanti__renk', 'urun_varyanti__beden'
+        'varyant', 'varyant__urun', 
+        'varyant__urun__kategori', 'varyant__urun__marka',
+        'varyant__renk', 'varyant__beden'
     ).order_by('-satis__satis_tarihi')
     
     # İstatistikler

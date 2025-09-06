@@ -1,0 +1,868 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sales-screen {
+        height: 100vh;
+        padding: 15px;
+    }
+    
+    /* Sol Panel - Satış İşlemleri */
+    .left-panel {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        height: calc(100vh - 30px);
+        overflow-y: auto;
+        padding: 20px;
+    }
+    
+    .barcode-section {
+        background: linear-gradient(135deg, #4f72ff 0%, #3b5bff 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .customer-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .cart-section {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    /* Sağ Panel - Özet ve İşlemler */
+    .right-panel {
+        height: calc(100vh - 30px);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .summary-card {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .notes-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        flex-grow: 1;
+    }
+    
+    .action-buttons-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .payment-methods-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .payment-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .payment-buttons .btn {
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        border-radius: 8px;
+    }
+    
+    .payment-detail-panel {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-top: 10px;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
+        opacity: 0;
+        padding: 0 15px;
+    }
+    
+    .payment-detail-panel.show {
+        max-height: 300px;
+        opacity: 1;
+        padding: 15px;
+    }
+    
+    .total-display {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+    }
+    
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .search-results .list-group-item {
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 0.75rem;
+        cursor: pointer;
+    }
+    
+    .search-results .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-payment.active {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sales-screen">
+    <div class="row h-100">
+        <!-- Sol Panel - Satış İşlemleri -->
+        <div class="col-md-8">
+            <div class="left-panel">
+                <!-- Barkod ve Ürün Arama -->
+                <div class="barcode-section">
+                    <h5><i class="fas fa-barcode me-2"></i>Satış Ekranı</h5>
+                    <p class="mb-3">Sipariş No: <strong>{{ siparis_no }}</strong></p>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Barkod Okuyucu</label>
+                            <input type="text" id="barkodInput" class="form-control form-control-lg" 
+                                   placeholder="Barkod okutun veya yazın..." autofocus>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ürün Ara</label>
+                            <div class="position-relative">
+                                <input type="text" id="urunAramaInput" class="form-control form-control-lg" 
+                                       placeholder="Ürün adı ile ara...">
+                                <div id="aramaContainer" class="search-results" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Müşteri Seçimi -->
+                <div class="customer-section">
+                    <h6><i class="fas fa-user me-2"></i>Müşteri <span class="text-danger">*</span></h6>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="position-relative">
+                                <input type="text" id="musteriAramaInput" class="form-control" 
+                                       placeholder="Müşteri adı, telefon veya firma ara..."
+                                       value="{% if secili_musteri %}{{ secili_musteri.ad }} {{ secili_musteri.soyad }}{% endif %}">
+                                <div id="musteriAramaContainer" class="search-results" style="display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <span id="secilenMusteri" class="form-control-plaintext">
+                                {% if secili_musteri %}
+                                    <strong>{{ secili_musteri.ad }} {{ secili_musteri.soyad }}</strong><br>
+                                    <small class="text-muted">{{ secili_musteri.telefon|default:"Tel: Yok" }}</small>
+                                {% else %}
+                                    <em>Müşteri seçili değil</em>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sepet -->
+                <div class="cart-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6><i class="fas fa-shopping-cart me-2"></i>Sepet</h6>
+                        <button class="btn btn-outline-danger btn-sm" id="sepetTemizleBtn">
+                            <i class="fas fa-trash me-1"></i>Sepeti Temizle
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th width="100">Miktar</th>
+                                    <th width="80">Fiyat</th>
+                                    <th width="80">Toplam</th>
+                                    <th width="50"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="sepetTablosu">
+                                <tr id="bosSepetMesaji">
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-shopping-cart fa-2x mb-2"></i><br>
+                                        Sepet boş. Ürün eklemek için barkod okutun veya ürün arayın.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Özet ve İşlemler -->
+        <div class="col-md-4">
+            <div class="right-panel">
+                <!-- Satış Özeti -->
+                <div class="summary-card">
+                    <h6><i class="fas fa-chart-line me-2"></i>Satış Özeti</h6>
+                    
+                    <div class="summary-item">
+                        <span>Toplam Ürün:</span>
+                        <span id="toplamUrun">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Toplam Miktar:</span>
+                        <span id="toplamMiktar">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Ara Toplam:</span>
+                        <span id="araToplam">₺0.00</span>
+                    </div>
+                    <hr style="border-color: rgba(255,255,255,0.3);">
+                    <div class="total-display" id="genelToplam">₺0.00</div>
+                </div>
+
+                <!-- Açıklama/Not -->
+                <div class="notes-card">
+                    <h6><i class="fas fa-comment me-2"></i>Açıklama/Not</h6>
+                    <textarea id="aciklamaAlani" class="form-control" rows="3" 
+                              placeholder="Bu satış için not veya açıklama yazın..."></textarea>
+                    <small class="form-text text-muted">Bu alan isteğe bağlıdır.</small>
+                </div>
+
+                <!-- İşlem Butonları -->
+                <div class="action-buttons-card">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-lg" id="satisTamamlaBtn" disabled>
+                            <i class="fas fa-check me-2"></i>Satışı Tamamla
+                        </button>
+                        <button class="btn btn-warning" id="genelIndirimuygula">
+                            <i class="fas fa-percent me-2"></i>Genel İndirim Uygula
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ödeme Yöntemleri -->
+                <div class="payment-methods-card">
+                    <h6><i class="fas fa-credit-card me-2"></i>Ödeme Yöntemi</h6>
+                    
+                    <div class="payment-buttons">
+                        <button class="btn btn-success btn-payment active" data-payment="nakit">
+                            <i class="fas fa-money-bill-wave mb-1"></i>
+                            Nakit
+                        </button>
+                        <button class="btn btn-primary btn-payment" data-payment="kart">
+                            <i class="fas fa-credit-card mb-1"></i>
+                            Kredi Kartı
+                        </button>
+                        <button class="btn btn-info btn-payment" data-payment="havale">
+                            <i class="fas fa-university mb-1"></i>
+                            Havale
+                        </button>
+                        <button class="btn btn-warning btn-payment" data-payment="karma">
+                            <i class="fas fa-exchange-alt mb-1"></i>
+                            Karma Ödeme
+                        </button>
+                        <button class="btn btn-secondary btn-payment" data-payment="acik_hesap">
+                            <i class="fas fa-file-invoice mb-1"></i>
+                            Açık Hesap
+                        </button>
+                    </div>
+                    
+                    <!-- Dinamik Ödeme Detayları -->
+                    <div id="paymentDetailPanel" class="payment-detail-panel">
+                        <div id="paymentDetailContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="hediyeCekiModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Hediye Çeki Sorgula</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Hediye Çeki Kodu</label>
+                    <input type="text" id="hediyeCekiKodu" class="form-control" placeholder="HC000001">
+                </div>
+                <div id="hediyeCekiBilgi"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="hediyeCekiSorgulaBtn">Sorgula</button>
+                <button type="button" class="btn btn-success" id="hediyeCekiKullanaBtn" style="display:none;">Kullan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="genelIndirimModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Genel İndirim</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">İndirim Türü</label>
+                    <select id="indirimTuru" class="form-select">
+                        <option value="tutar">Tutar (₺)</option>
+                        <option value="yuzde">Yüzde (%)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">İndirim Miktarı</label>
+                    <input type="number" id="indirimMiktari" class="form-control" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-success" id="indirimUygulaBtn">Uygula</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="musteriId" value="{% if secili_musteri %}{{ secili_musteri.id }}{% endif %}">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// Global değişkenler
+let sepet = [];
+let seciliMusteri = {% if secili_musteri %}{ id: {{ secili_musteri.id }}, ad: "{{ secili_musteri.ad }}", soyad: "{{ secili_musteri.soyad }}", telefon: "{{ secili_musteri.telefon }}" }{% else %}null{% endif %};
+let seciliOdemeYontemi = 'nakit';
+let genelIndirim = 0;
+let kullanilacakHediyeCeki = null;
+let karmaOdeme = { nakit: 0, kart: 0, havale: 0, hediye_ceki: 0 };
+
+// Sayfa yüklendiğinde
+$(document).ready(function() {
+    sepetGuncelle();
+    
+    // Event listener'ları ekle
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Barkod input
+    $('#barkodInput').on('keypress', function(e) {
+        if (e.which === 13) {
+            const barkod = $(this).val().trim();
+            if (barkod) {
+                barkodSorgula(barkod);
+                $(this).val('');
+            }
+        }
+    });
+
+    // Ürün arama
+    $('#urunAramaInput').on('input', function() {
+        const query = $(this).val().trim();
+        if (query.length >= 2) {
+            urunAra(query);
+        } else {
+            $('#aramaContainer').hide();
+        }
+    });
+
+    // Müşteri arama
+    $('#musteriAramaInput').on('input', function() {
+        const query = $(this).val().trim();
+        if (query.length >= 2) {
+            musteriAra(query);
+        } else {
+            $('#musteriAramaContainer').hide();
+            if (query.length === 0) {
+                seciliMusteri = null;
+                $('#secilenMusteri').html('<em>Müşteri seçili değil</em>');
+                $('#musteriId').val('');
+                satisTamamlaButonKontrol();
+            }
+        }
+    });
+
+    // Ödeme yöntemi seçimi
+    $('.btn-payment').on('click', function() {
+        $('.btn-payment').removeClass('active');
+        $(this).addClass('active');
+        seciliOdemeYontemi = $(this).data('payment');
+        showPaymentDetail(seciliOdemeYontemi);
+        satisTamamlaButonKontrol();
+    });
+
+    // Sepet temizle
+    $('#sepetTemizleBtn').on('click', function() {
+        if (confirm('Sepeti temizlemek istediğinizden emin misiniz?')) {
+            sepetTemizle();
+        }
+    });
+
+    // Satış tamamla
+    $('#satisTamamlaBtn').on('click', function() {
+        satisTamamla();
+    });
+
+    // Genel indirim
+    $('#genelIndirimuygula').on('click', function() {
+        $('#genelIndirimModal').modal('show');
+    });
+
+    $('#indirimUygulaBtn').on('click', function() {
+        uygulaGenelIndirim();
+    });
+
+    // Doküman click - arama sonuçlarını gizle
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#urunAramaInput, #aramaContainer').length) {
+            $('#aramaContainer').hide();
+        }
+        if (!$(e.target).closest('#musteriAramaInput, #musteriAramaContainer').length) {
+            $('#musteriAramaContainer').hide();
+        }
+    });
+}
+
+function showPaymentDetail(paymentType) {
+    const panel = document.getElementById('paymentDetailPanel');
+    const content = document.getElementById('paymentDetailContent');
+    
+    panel.classList.remove('show');
+    
+    setTimeout(() => {
+        switch(paymentType) {
+            case 'nakit':
+                content.innerHTML = `
+                    <h6><i class="fas fa-money-bill-wave me-2"></i>Nakit Ödeme</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label">Alınan Tutar</label>
+                            <input type="number" class="form-control" id="alinanTutar" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Para Üstü</label>
+                            <input type="number" class="form-control" id="paraUstu" readonly>
+                        </div>
+                    </div>
+                `;
+                panel.classList.add('show');
+                break;
+                
+            case 'kart':
+                content.innerHTML = `
+                    <h6><i class="fas fa-credit-card me-2"></i>Kredi Kartı</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Taksit Sayısı</label>
+                        <select class="form-select" id="taksitSayisi">
+                            <option value="1">Peşin</option>
+                            <option value="2">2 Taksit</option>
+                            <option value="3">3 Taksit</option>
+                            <option value="6">6 Taksit</option>
+                            <option value="9">9 Taksit</option>
+                            <option value="12">12 Taksit</option>
+                        </select>
+                    </div>
+                `;
+                panel.classList.add('show');
+                break;
+                
+            case 'havale':
+                content.innerHTML = `
+                    <h6><i class="fas fa-university me-2"></i>Havale/EFT</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Banka</label>
+                        <input type="text" class="form-control" id="banka" placeholder="Banka adı">
+                    </div>
+                `;
+                panel.classList.add('show');
+                break;
+                
+            case 'karma':
+                content.innerHTML = `
+                    <h6><i class="fas fa-exchange-alt me-2"></i>Karma Ödeme</h6>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Nakit</label>
+                            <input type="number" class="form-control" id="nakitTutar" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Kart</label>
+                            <input type="number" class="form-control" id="kartTutar" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label">Havale</label>
+                            <input type="number" class="form-control" id="havaleTutar" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                `;
+                panel.classList.add('show');
+                break;
+                
+            case 'acik_hesap':
+                content.innerHTML = `
+                    <h6><i class="fas fa-file-invoice me-2"></i>Açık Hesap</h6>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Bu satış müşterinin hesabına borç olarak kaydedilecektir.
+                    </div>
+                `;
+                panel.classList.add('show');
+                break;
+                
+            default:
+                panel.classList.remove('show');
+        }
+    }, 100);
+}
+
+// Barkod sorgulama
+function barkodSorgula(barkod) {
+    $.get('/satis/barkod-sorgula/', { barkod: barkod })
+        .done(function(data) {
+            if (data.success) {
+                sepeteEkle(data.urun);
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .fail(function() {
+            showAlert('danger', 'Barkod sorgulanırken hata oluştu');
+        });
+}
+
+// Ürün arama
+function urunAra(query) {
+    $.get('/satis/ajax/urun-ara/', { q: query })
+        .done(function(data) {
+            if (data.success && data.urunler.length > 0) {
+                let html = '';
+                data.urunler.forEach(function(urun) {
+                    html += `
+                        <div class="list-group-item list-group-item-action" onclick="sepeteEkle(${JSON.stringify(urun).replace(/"/g, '&quot;')})">
+                            <strong>${urun.ad}</strong><br>
+                            <small class="text-muted">
+                                Barkod: ${urun.barkod} | 
+                                ${urun.beden ? `Beden: ${urun.beden} | ` : ''}
+                                Fiyat: ₺${urun.satis_fiyati} | Stok: ${urun.stok_miktari}
+                            </small>
+                        </div>
+                    `;
+                });
+                $('#aramaContainer').html(html).show();
+            } else {
+                $('#aramaContainer').html('<div class="list-group-item">Ürün bulunamadı</div>').show();
+            }
+        });
+}
+
+// Müşteri arama
+function musteriAra(query) {
+    $.get('/satis/ajax/musteri-ara/', { q: query })
+        .done(function(data) {
+            if (data.success && data.musteriler.length > 0) {
+                let html = '';
+                data.musteriler.forEach(function(musteri) {
+                    html += `
+                        <div class="list-group-item list-group-item-action" onclick="musteriSec(${JSON.stringify(musteri).replace(/"/g, '&quot;')})">
+                            <strong>${musteri.ad} ${musteri.soyad}</strong><br>
+                            <small class="text-muted">
+                                ${musteri.telefon} ${musteri.firma_adi ? '| ' + musteri.firma_adi : ''}
+                            </small>
+                        </div>
+                    `;
+                });
+                $('#musteriAramaContainer').html(html).show();
+            } else {
+                $('#musteriAramaContainer').html('<div class="list-group-item">Müşteri bulunamadı</div>').show();
+            }
+        });
+}
+
+function musteriSec(musteri) {
+    seciliMusteri = musteri;
+    $('#musteriAramaInput').val(`${musteri.ad} ${musteri.soyad}`);
+    $('#secilenMusteri').html(`
+        <strong>${musteri.ad} ${musteri.soyad}</strong><br>
+        <small class="text-muted">${musteri.telefon}</small>
+    `);
+    $('#musteriId').val(musteri.id);
+    $('#musteriAramaContainer').hide();
+    satisTamamlaButonKontrol();
+}
+
+// Sepete ekleme
+function sepeteEkle(urun) {
+    const mevcutUrun = sepet.find(item => item.id === urun.id && item.varyant_id === urun.varyant_id);
+    
+    if (mevcutUrun) {
+        mevcutUrun.miktar += 1;
+        mevcutUrun.toplam = mevcutUrun.fiyat * mevcutUrun.miktar;
+    } else {
+        sepet.push({
+            id: urun.id,
+            varyant_id: urun.varyant_id,
+            ad: urun.ad,
+            barkod: urun.barkod,
+            beden: urun.beden,
+            renk: urun.renk,
+            fiyat: parseFloat(urun.satis_fiyati),
+            miktar: 1,
+            toplam: parseFloat(urun.satis_fiyati),
+            stok: urun.stok_miktari
+        });
+    }
+    
+    sepetGuncelle();
+    $('#aramaContainer').hide();
+    $('#urunAramaInput').val('');
+    showAlert('success', `${urun.ad} sepete eklendi`);
+}
+
+function sepettenCikar(urunId) {
+    sepet = sepet.filter(item => item.id !== urunId);
+    sepetGuncelle();
+    showAlert('info', 'Ürün sepetten çıkarıldı');
+}
+
+function miktarGuncelle(urunId, yeniMiktar) {
+    const urun = sepet.find(item => item.id === urunId);
+    if (urun && yeniMiktar > 0 && yeniMiktar <= urun.stok) {
+        urun.miktar = yeniMiktar;
+        urun.toplam = urun.fiyat * urun.miktar;
+        sepetGuncelle();
+    }
+}
+
+function sepetGuncelle() {
+    const tbody = $('#sepetTablosu');
+    const bosMesaj = $('#bosSepetMesaji');
+    
+    if (sepet.length === 0) {
+        bosMesaj.show();
+        tbody.find('tr:not(#bosSepetMesaji)').remove();
+    } else {
+        bosMesaj.hide();
+        tbody.find('tr:not(#bosSepetMesaji)').remove();
+        
+        sepet.forEach(function(item) {
+            const row = `
+                <tr>
+                    <td>
+                        <strong>${item.ad}</strong><br>
+                        <small class="text-muted">
+                            Barkod: ${item.barkod}
+                            ${item.beden ? ' | ' + item.beden : ''}
+                            ${item.renk ? ' | ' + item.renk : ''}
+                        </small>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" value="${item.miktar}" 
+                               onchange="miktarGuncelle(${item.id}, parseInt(this.value))" min="1" max="${item.stok}">
+                    </td>
+                    <td>₺${item.fiyat.toFixed(2)}</td>
+                    <td>₺${item.toplam.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="sepettenCikar(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+    
+    hesaplaToplamlar();
+    satisTamamlaButonKontrol();
+}
+
+function hesaplaToplamlar() {
+    let toplamUrun = sepet.length;
+    let toplamMiktar = sepet.reduce((sum, item) => sum + item.miktar, 0);
+    let araToplam = sepet.reduce((sum, item) => sum + item.toplam, 0);
+    let genelToplam = araToplam - genelIndirim;
+    
+    $('#toplamUrun').text(toplamUrun);
+    $('#toplamMiktar').text(toplamMiktar);
+    $('#araToplam').text(`₺${araToplam.toFixed(2)}`);
+    $('#genelToplam').text(`₺${genelToplam.toFixed(2)}`);
+}
+
+function sepetTemizle() {
+    sepet = [];
+    genelIndirim = 0;
+    kullanilacakHediyeCeki = null;
+    karmaOdeme = { nakit: 0, kart: 0, havale: 0, hediye_ceki: 0 };
+    $('#aciklamaAlani').val('');
+    sepetGuncelle();
+}
+
+function uygulaGenelIndirim() {
+    const indirimTuru = $('#indirimTuru').val();
+    const indirimMiktari = parseFloat($('#indirimMiktari').val()) || 0;
+    const araToplam = sepet.reduce((sum, item) => sum + item.toplam, 0);
+    
+    if (indirimTuru === 'yuzde') {
+        genelIndirim = araToplam * (indirimMiktari / 100);
+    } else {
+        genelIndirim = indirimMiktari;
+    }
+    
+    hesaplaToplamlar();
+    $('#genelIndirimModal').modal('hide');
+    showAlert('success', 'Genel indirim uygulandı');
+}
+
+function satisTamamla() {
+    if (sepet.length === 0) {
+        showAlert('warning', 'Sepet boş!');
+        return;
+    }
+    
+    if (!seciliMusteri) {
+        showAlert('error', 'Satış için müşteri seçmek zorunludur!');
+        return;
+    }
+    
+    let odemeDetaylari = {
+        tip: seciliOdemeYontemi === 'karma' ? 'karma' : 'tek',
+        odeme_yontemi: seciliOdemeYontemi
+    };
+    
+    if (seciliOdemeYontemi === 'kart') {
+        odemeDetaylari.taksit_sayisi = parseInt($('#taksitSayisi').val()) || 1;
+    }
+    
+    if (seciliOdemeYontemi === 'karma') {
+        odemeDetaylari.karma_detay = {
+            nakit: parseFloat($('#nakitTutar').val()) || 0,
+            kart: parseFloat($('#kartTutar').val()) || 0,
+            havale: parseFloat($('#havaleTutar').val()) || 0
+        };
+    }
+    
+    const data = {
+        sepet: sepet,
+        musteri_id: seciliMusteri.id,
+        odeme_detaylari: odemeDetaylari,
+        genel_indirim: genelIndirim,
+        aciklama: $('#aciklamaAlani').val().trim()
+    };
+    
+    $.ajax({
+        url: '/satis/tamamla/',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        beforeSend: function() {
+            $('#satisTamamlaBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> İşleniyor...');
+        },
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', 'Satış başarıyla tamamlandı!');
+                
+                if (confirm('Fiş yazdırılsın mı?')) {
+                    window.open(`/satis/${response.satis_id}/yazdır/`, '_blank');
+                }
+                
+                sepetTemizle();
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function() {
+            showAlert('danger', 'Satış tamamlanırken hata oluştu');
+        },
+        complete: function() {
+            $('#satisTamamlaBtn').prop('disabled', false).html('<i class="fas fa-check me-2"></i>Satışı Tamamla');
+        }
+    });
+}
+
+function satisTamamlaButonKontrol() {
+    const sepetBos = sepet.length === 0;
+    const musteriYok = !seciliMusteri;
+    $('#satisTamamlaBtn').prop('disabled', sepetBos || musteriYok);
+}
+
+function showAlert(type, message, timeout = 5000) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    $('body').append(alertHtml);
+    
+    setTimeout(function() {
+        $('.alert').fadeOut(function() {
+            $(this).remove();
+        });
+    }, timeout);
+}
+
+// Initialize with cash payment
+showPaymentDetail('nakit');
+</script>
+{% endblock %}

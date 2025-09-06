@@ -62,17 +62,28 @@ def gunluk_rapor_view(request):
     )
     
     # En çok satan ürünler
-    en_cok_satan_urunler = SatisDetay.objects.filter(
+    cok_satan_urunler = SatisDetay.objects.filter(
         satis__satis_tarihi__date=secili_tarih,
         satis__durum='tamamlandi'
     ).values(
-        'varyant__urun__ad',
-        'varyant__renk__ad',
-        'varyant__beden__ad'
+        'urun__ad'
     ).annotate(
-        toplam_adet=Sum('miktar'),
-        toplam_tutar=Sum('toplam_fiyat')
-    ).order_by('-toplam_adet')[:10]
+        toplam_miktar=Sum('miktar'),
+        toplam_ciro=Sum('toplam_fiyat')
+    ).order_by('-toplam_miktar')[:10]
+    
+    # Template için uygun format
+    cok_satan_urunler = [{
+        'urun': {'ad': item['urun__ad']},
+        'toplam_miktar': item['toplam_miktar'],
+        'toplam_ciro': item['toplam_ciro']
+    } for item in cok_satan_urunler]
+    
+    # Son satışlar
+    son_satislar = Satis.objects.filter(
+        satis_tarihi__date=secili_tarih,
+        durum='tamamlandi'
+    ).select_related('musteri').order_by('-satis_tarihi')[:10]
     
     # Günlük giderler
     gunluk_giderler = Gider.objects.filter(tarih=secili_tarih)
@@ -132,7 +143,8 @@ def gunluk_rapor_view(request):
         'nakit_satislar': nakit_satislar,
         'kart_satislar': kart_satislar,
         'hediye_ceki_satislar': hediye_ceki_satislar,
-        'en_cok_satan_urunler': en_cok_satan_urunler,
+        'cok_satan_urunler': cok_satan_urunler,
+        'son_satislar': son_satislar,
         'gunluk_giderler': gunluk_giderler,
         'toplam_gider': toplam_gider,
         'net_kar': net_kar,
